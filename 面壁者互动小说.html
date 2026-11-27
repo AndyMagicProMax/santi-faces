@@ -558,6 +558,15 @@ body.kg-mode .kg-frame-wrap{height:calc(100vh - 142px);min-height:560px}
 .cmt{font-size:12.5px;line-height:1.9;color:#b9c4cc;word-break:break-word}
 .cmt b{color:var(--face);font-weight:400;letter-spacing:1px}
 .cmt .del{margin-left:8px;color:#b57a6d;cursor:pointer;font-size:11px;letter-spacing:1px}
+.cmt .del{margin-left:8px;color:#b57a6d;cursor:pointer;font-size:11px;letter-spacing:1px}
+.cmt-acts{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap}
+.cmt.reply{padding-left:12px;border-left:2px solid rgba(143,196,212,.28);margin-left:2px}
+.pact.small{padding:1px 8px;font-size:10.5px;letter-spacing:.5px}
+.pact.small svg{width:11px;height:11px}
+.pin{display:inline-block;font-size:10px;letter-spacing:1px;color:#e0b96a;border:1px solid rgba(224,185,106,.55);
+  background:rgba(224,185,106,.1);padding:0 6px;border-radius:2px;margin-right:8px;vertical-align:middle}
+.post.pinned{border-left-color:rgba(224,185,106,.75);box-shadow:0 0 0 1px rgba(224,185,106,.12) inset}
+.reply-line{display:flex;gap:8px;margin-top:8px;align-items:center}
 .cmt-line{display:flex;gap:8px;margin-top:6px}
 .cmt-input{flex:1;background:rgba(8,12,16,.7);border:1px solid var(--line);color:var(--text);
   font-family:inherit;font-size:12.5px;padding:7px 10px;border-radius:3px;outline:none}
@@ -2956,6 +2965,7 @@ async function renderAdmin(){
    ============================================================ */
 let UNSEEN = 0;            // 未读消息数（别人对我的留言点赞或评论）
 let focusPostId = null;    // 从消息点进来时要定位的留言
+let focusCommentId = null; // 从消息点进来时要定位的评论
 const SVG_HEART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 20s-7-4.4-7-9.3A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.7C19 15.6 12 20 12 20z"/></svg>';
 const SVG_BUBBLE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v10H9l-4 4z"/></svg>';
 
@@ -3012,9 +3022,12 @@ function boardShell(active){
 function postHTML(p, liked){
   const admin = isAdmin();
   const t = fmtFullTime(p.created_at);
-  return `<div class="post" id="post-${p.id}">
+  const pinBtn = admin
+    ? `<button class="pact" data-act="pin" data-id="${p.id}" data-pin="${p.pinned ? 1 : 0}">${p.pinned ? "取消置顶" : "置顶"}</button>`
+    : "";
+  return `<div class="post ${p.pinned ? "pinned" : ""}" id="post-${p.id}">
     <div class="post-head">
-      <span class="post-user">${escHtml(p.username)}</span>
+      <span class="post-user">${p.pinned ? '<span class="pin">置顶</span>' : ""}${escHtml(p.username)}</span>
       <span class="post-time">${t}</span>
     </div>
     <div class="post-text">${escHtml(p.content)}</div>
@@ -3022,6 +3035,7 @@ function postHTML(p, liked){
       <button class="pact ${liked ? "liked" : ""}" data-act="like" data-id="${p.id}">${SVG_HEART}<span>${p.like_count || 0}</span></button>
       <button class="pact" data-act="cmt" data-id="${p.id}">${SVG_BUBBLE}<span>${p.comment_count || 0} 评论</span></button>
       ${admin ? `<button class="pact danger" data-act="delpost" data-id="${p.id}">删除留言</button>` : ""}
+      ${pinBtn}
     </div>
     <div id="cmts-${p.id}"></div>
   </div>`;
@@ -3035,7 +3049,7 @@ async function renderBoard(){
   let posts = [], myLikes = new Set();
   try{
     const token = await ensureToken();
-    const rows = await sbFetch("/rest/v1/posts?select=id,user_id,username,content,like_count,comment_count,created_at&order=created_at.desc&limit=50", { token: token });
+    const rows = await sbFetch("/rest/v1/posts?select=id,user_id,username,content,like_count,comment_count,pinned,created_at&order=pinned.desc,created_at.desc&limit=50", { token: token });
     posts = rows || [];
     if(token){
       const l = await sbFetch("/rest/v1/post_likes?select=post_id&user_id=eq." + encodeURIComponent(AUTH.user.id), { token: token });
@@ -3065,18 +3079,25 @@ async function renderBoard(){
       if(act === "like") toggleLike(id, btn);
       else if(act === "cmt") toggleComments(id);
       else if(act === "delpost") delPost(id);
+      else if(act === "pin") togglePin(id, btn.dataset.pin === "1");
     });
   });
   const send = document.getElementById("postSend");
   if(send) send.addEventListener("click", submitPost);
-  if(!canPost()){
-    const f = document.querySelector("#postWrap .pact");
-    if(f) f.addEventListener("click", ()=>{});
-  }
   if(focusPostId){
-    const el = document.getElementById("post-" + focusPostId);
-    focusPostId = null;
+    const pid = focusPostId, cid = focusCommentId;
+    focusPostId = null; focusCommentId = null;
+    const el = document.getElementById("post-" + pid);
     if(el) el.scrollIntoView({ block:"center" });
+    if(cid){
+      const box = document.getElementById("cmts-" + pid);
+      if(box){
+        box.dataset.open = "1";
+        await fillComments(pid, box);
+        const row = document.getElementById("cmt-row-" + cid);
+        if(row) row.scrollIntoView({ block:"center" });
+      }
+    }
   }
 }
 
@@ -3110,39 +3131,104 @@ async function fillComments(postId, box){
   const token = await ensureToken();
   box.innerHTML = `<div class="comments"><div class="cmt">加载评论…</div></div>`;
   try{
-    const rows = await sbFetch("/rest/v1/post_comments?select=id,username,content,created_at&post_id=eq." + encodeURIComponent(postId) + "&order=created_at.asc&limit=100", { token: token });
-    const list = (rows || []).map(c=>`<div class="cmt"><b>${escHtml(c.username)}</b>：${escHtml(c.content)}<span class="post-time"> · ${fmtFullTime(c.created_at)}</span>${isAdmin() ? `<span class="del" data-delcmt="${c.id}">删除</span>` : ""}</div>`).join("");
+    const rows = await sbFetch("/rest/v1/post_comments?select=id,username,content,created_at,parent_id,reply_to,like_count&post_id=eq." + encodeURIComponent(postId) + "&order=created_at.asc&limit=200", { token: token });
+    let myLikes = new Set();
+    if(token){
+      const l = await sbFetch("/rest/v1/comment_likes?select=comment_id&user_id=eq." + encodeURIComponent(AUTH.user.id), { token: token });
+      (l || []).forEach(r=>myLikes.add(String(r.comment_id)));
+    }
+    const list = (rows || []).map(c=>{
+      const liked = myLikes.has(String(c.id));
+      return `<div class="cmt ${c.parent_id ? "reply" : ""}" id="cmt-row-${c.id}">
+        <div class="cmt-body"><b>${escHtml(c.username)}</b>${c.reply_to ? " 回复 <b>" + escHtml(c.reply_to) + "</b>" : ""}：${escHtml(c.content)}<span class="post-time"> · ${fmtFullTime(c.created_at)}</span></div>
+        <div class="cmt-acts">
+          <button class="pact small ${liked ? "liked" : ""}" data-clike="${c.id}">${SVG_HEART}<span>${c.like_count || 0}</span></button>
+          <button class="pact small" data-creply="${c.id}" data-cname="${escHtml(c.username)}">回复</button>
+          ${isAdmin() ? `<span class="del" data-delcmt="${c.id}">删除</span>` : ""}
+        </div>
+        <div id="replybox-${c.id}"></div>
+      </div>`;
+    }).join("");
     box.innerHTML = `<div class="comments">
         ${list || `<div class="cmt" style="color:#6f7d87">还没有评论</div>`}
         ${canPost() ? `<div class="cmt-line"><input class="cmt-input" id="cmt-${postId}" maxlength="300" placeholder="说点什么…"><button class="pact" data-sendcmt="1">发送</button></div>` : ""}
       </div>`;
     const send = box.querySelector("[data-sendcmt]");
-    if(send) send.addEventListener("click", ()=>addComment(postId, box));
+    if(send) send.addEventListener("click", ()=>addComment(postId, box, null, ""));
     box.querySelectorAll("[data-delcmt]").forEach(el=>{
       el.addEventListener("click", ()=>delComment(el.dataset.delcmt, postId, box));
+    });
+    box.querySelectorAll("[data-clike]").forEach(el=>{
+      el.addEventListener("click", ()=>toggleCommentLike(el.dataset.clike, el, postId, box));
+    });
+    box.querySelectorAll("[data-creply]").forEach(el=>{
+      el.addEventListener("click", ()=>openReply(postId, box, el.dataset.creply, el.dataset.cname || ""));
     });
   }catch(e){
     box.innerHTML = `<div class="comments"><div class="cmt">评论读取失败：${escHtml(e.message)}</div></div>`;
   }
 }
 
-async function addComment(postId, box){
+/* 点「回复」：在该评论下面展开一个输入框 */
+function openReply(postId, box, commentId, name){
+  if(!canPost()){ toastMsg("游客不能回复，登录后即可"); return; }
+  const wrap = box.querySelector("#replybox-" + commentId);
+  if(!wrap) return;
+  if(wrap.dataset.open === "1"){ wrap.innerHTML = ""; wrap.dataset.open = "0"; return; }
+  wrap.dataset.open = "1";
+  wrap.innerHTML = `<div class="reply-line"><input class="cmt-input" id="rcmt-${commentId}" maxlength="300" placeholder="回复 ${escHtml(name)}…"><button class="pact" data-rsend="1">发送</button></div>`;
+  const input = wrap.querySelector("#rcmt-" + commentId);
+  const btn = wrap.querySelector("[data-rsend]");
+  if(input) input.focus();
+  if(btn) btn.addEventListener("click", ()=>{
+    const text = ((input && input.value) || "").trim();
+    if(!text){ toastMsg("写点什么再发送吧"); return; }
+    addComment(postId, box, commentId, name, text);
+  });
+}
+
+async function addComment(postId, box, parentId, replyTo, preset){
   if(!canPost()){ toastMsg("游客不能评论，登录后即可"); return; }
-  const input = box.querySelector("#cmt-" + postId);
-  const text = ((input && input.value) || "").trim();
+  let text = (preset || "").trim();
+  if(!text){
+    const input = box.querySelector("#cmt-" + postId);
+    text = ((input && input.value) || "").trim();
+  }
   if(!text){ toastMsg("写点什么再发送吧"); return; }
   const token = await ensureToken();
   if(!token){ toastMsg("登录状态已过期，请重新登录"); return; }
   try{
     await sbFetch("/rest/v1/post_comments", { method:"POST", token: token, headers:{ "Prefer":"return=minimal" },
-      body:{ post_id: Number(postId), user_id: AUTH.user.id, username: AUTH.user.username, content: text } });
-    await fillComments(postId, box);
+      body:{ post_id: Number(postId), user_id: AUTH.user.id, username: AUTH.user.username, content: text,
+             parent_id: parentId ? Number(parentId) : null, reply_to: replyTo || "" } });
     const y = window.scrollY;
     await renderBoard();
     window.scrollTo(0, y);
     const nb = document.getElementById("cmts-" + postId);
     if(nb){ nb.dataset.open = "1"; await fillComments(postId, nb); }
   }catch(e){ toastMsg("评论失败：" + e.message); }
+}
+
+/* 评论点赞 / 取消 */
+async function toggleCommentLike(commentId, btn, postId, box){
+  if(!canPost()){ toastMsg("游客不能点赞，登录后即可"); return; }
+  const token = await ensureToken();
+  if(!token){ toastMsg("登录状态已过期，请重新登录"); return; }
+  const liked = btn.classList.contains("liked");
+  try{
+    if(liked){
+      await sbFetch("/rest/v1/comment_likes?comment_id=eq." + encodeURIComponent(commentId) + "&user_id=eq." + encodeURIComponent(AUTH.user.id), { method:"DELETE", token: token });
+    }else{
+      await sbFetch("/rest/v1/comment_likes", { method:"POST", token: token, headers:{ "Prefer":"return=minimal" },
+        body:{ comment_id: Number(commentId), user_id: AUTH.user.id, username: AUTH.user.username } });
+    }
+    await fillComments(postId, box);
+    const y = window.scrollY;
+    await renderBoard();
+    window.scrollTo(0, y);
+    const nb = document.getElementById("cmts-" + postId);
+    if(nb){ nb.dataset.open = "1"; await fillComments(postId, nb); }
+  }catch(e){ toastMsg("点赞失败：" + e.message); }
 }
 
 async function submitPost(){
@@ -3158,6 +3244,20 @@ async function submitPost(){
     toastMsg("已发布");
     await renderBoard();
   }catch(e){ toastMsg("发布失败：" + e.message); }
+}
+
+/* 管理员置顶 / 取消置顶 */
+async function togglePin(id, pinned){
+  if(!isAdmin()){ toastMsg("只有管理员可以置顶留言"); return; }
+  try{
+    await sbFetch("/rest/v1/posts?id=eq." + encodeURIComponent(id), {
+      method:"PATCH", token: await ensureToken(), headers:{ "Prefer":"return=minimal" },
+      body:{ pinned: !pinned }
+    });
+    toastMsg(pinned ? "已取消置顶" : "已置顶");
+    await renderBoard();
+    window.scrollTo(0, 0);
+  }catch(e){ toastMsg("操作失败：" + e.message); }
 }
 
 async function delPost(id){
@@ -3191,20 +3291,24 @@ async function renderMessages(){
   try{
     const token = await ensureToken();
     if(!token) throw new Error("登录状态已过期，请重新登录");
-    rows = await sbFetch("/rest/v1/notifications?select=id,kind,post_id,actor,excerpt,seen,created_at&order=created_at.desc&limit=80", { token: token }) || [];
+    rows = await sbFetch("/rest/v1/notifications?select=id,kind,post_id,comment_id,actor,excerpt,seen,created_at&order=created_at.desc&limit=80", { token: token }) || [];
   }catch(e){
     body.innerHTML = `<div class="admin-note">读取消息失败：${escHtml(e.message)}<br>如果提示 relation "public.notifications" does not exist，说明交流区建表脚本还没执行。</div>`;
     return;
   }
   body.innerHTML = rows.length ? rows.map(n=>{
-    const isLike = n.kind === "like";
-    const title = isLike
-      ? `<b>${escHtml(n.actor)}</b> 赞了你的留言`
-      : `<b>${escHtml(n.actor)}</b> 评论了你的留言`;
-    return `<div class="msg-item ${n.seen ? "" : "unread"}" data-post="${n.post_id}">
-      <div class="msg-ic">${isLike ? "♥" : "💬"}</div>
+    const kind = n.kind;
+    const map = {
+      like:    { ic:"♥",  txt:"赞了你的留言" },
+      comment: { ic:"💬", txt:"评论了你的留言" },
+      reply:   { ic:"↩",  txt:"回复了你的评论" },
+      clike:   { ic:"♥",  txt:"赞了你的评论" }
+    };
+    const meta = map[kind] || { ic:"•", txt:"在你的留言下有新动静" };
+    return `<div class="msg-item ${n.seen ? "" : "unread"}" data-post="${n.post_id}" data-comment="${n.comment_id || ""}">
+      <div class="msg-ic">${meta.ic}</div>
       <div class="msg-body">
-        <div class="msg-title">${title}</div>
+        <div class="msg-title"><b>${escHtml(n.actor)}</b> ${meta.txt}</div>
         <div class="msg-ex">${escHtml(n.excerpt || "")}</div>
       </div>
       <div class="msg-time">${fmtFullTime(n.created_at)}</div>
@@ -3214,6 +3318,7 @@ async function renderMessages(){
   body.querySelectorAll(".msg-item").forEach(el=>{
     el.addEventListener("click", ()=>{
       focusPostId = el.dataset.post;
+      focusCommentId = el.dataset.comment || null;
       location.hash = "#board";
     });
   });

@@ -459,6 +459,64 @@ body.kg-mode .kg-frame-wrap{height:calc(100vh - 142px);min-height:560px}
   .save-tag{width:44px}
 }
 
+/* ===== 登录 / 注册 ===== */
+.auth{min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 16px;gap:18px}
+.auth-brand{font-size:12px;letter-spacing:7px;color:var(--face);opacity:.85}
+.auth-card{width:min(420px,92vw);background:var(--panel);border:1px solid var(--line);border-radius:4px;
+  padding:24px 26px 22px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 24px 60px rgba(0,0,0,.45)}
+.auth-tabs{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid var(--line);padding-bottom:13px}
+.auth-tab{flex:1;background:transparent;border:1px solid transparent;color:var(--text-dim);font-family:inherit;
+  font-size:13px;letter-spacing:2px;padding:8px 0;cursor:pointer;transition:.2s}
+.auth-tab.on{color:var(--face);border-color:rgba(143,196,212,.45);background:rgba(143,196,212,.08)}
+.auth-field{margin-bottom:13px}
+.auth-label{display:block;font-size:11.5px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px}
+.auth-input{width:100%;box-sizing:border-box;background:rgba(8,12,16,.7);border:1px solid var(--line);
+  color:var(--text);font-family:inherit;font-size:14px;letter-spacing:1px;padding:10px 12px;border-radius:3px;outline:none;transition:.18s}
+.auth-input:focus{border-color:rgba(143,196,212,.7);box-shadow:0 0 0 2px rgba(143,196,212,.12)}
+.auth-pwd{display:flex;align-items:center;gap:8px}
+.auth-eye{flex:none;background:transparent;border:1px solid var(--line);color:var(--text-dim);width:42px;height:40px;
+  border-radius:3px;cursor:pointer;display:grid;place-items:center;transition:.18s}
+.auth-eye:hover{color:var(--face);border-color:rgba(143,196,212,.5)}
+.auth-eye svg{width:18px;height:18px}
+.auth-msg{min-height:17px;font-size:12px;letter-spacing:.5px;margin:2px 0 11px;color:#e0927f;line-height:1.7}
+.auth-msg.ok{color:#84d3a0}
+.auth-submit{width:100%;padding:12px;font-family:inherit;font-size:14px;letter-spacing:5px;color:var(--face);
+  background:rgba(143,196,212,.08);border:1px solid rgba(143,196,212,.5);border-radius:3px;cursor:pointer;transition:.2s}
+.auth-submit:hover:not(:disabled){background:rgba(143,196,212,.18);color:#dff2f8}
+.auth-submit:disabled{opacity:.55;cursor:default}
+.auth-alt{margin-top:14px;text-align:center;font-size:12.5px;letter-spacing:1px;color:var(--text-dim)}
+.auth-alt a{color:var(--face);cursor:pointer;text-decoration:none;border-bottom:1px dashed rgba(143,196,212,.4)}
+.auth-foot{font-size:11px;letter-spacing:1.5px;color:#5b6873;text-align:center;line-height:1.95}
+.auth-mode .bgm-control{display:none!important}
+/* 首页用户条 */
+.who{display:flex;justify-content:center;align-items:center;gap:10px;font-size:12px;letter-spacing:1.5px;
+  color:var(--text-dim);margin:2px 0 10px;flex-wrap:wrap}
+.who b{color:var(--face);font-weight:400;letter-spacing:2px}
+.who a{color:var(--gold);cursor:pointer;text-decoration:none;border-bottom:1px dashed rgba(201,185,138,.4)}
+.who .guest{color:#c9b98a}
+/* 管理后台 */
+.admin{max-width:820px;margin:0 auto;padding:64px 20px 90px}
+.admin h1{font-size:20px;letter-spacing:8px;color:var(--face);font-weight:400;margin:0 0 8px}
+.admin-sub{font-size:12.5px;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:24px}
+.admin-stat{display:flex;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+.admin-stat div{background:var(--panel);border:1px solid var(--line);padding:13px 22px;border-radius:3px;
+  font-size:11.5px;letter-spacing:2px;color:var(--text-dim)}
+.admin-stat b{display:block;font-size:23px;color:var(--face);font-weight:400;margin-bottom:4px;letter-spacing:2px}
+.admin-table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);font-size:13px}
+.admin-table th,.admin-table td{padding:10px 14px;border-bottom:1px solid var(--line);text-align:left;letter-spacing:1px}
+.admin-table th{font-weight:400;color:var(--text-dim);font-size:11.5px;letter-spacing:2px}
+.admin-table td{color:var(--text)}
+.admin-table tr:last-child td{border-bottom:none}
+.admin-table .role-admin{color:var(--gold)}
+.admin-note{margin-top:22px;font-size:12px;color:var(--text-dim);line-height:1.95;background:var(--panel-2);
+  border-left:3px solid var(--gold);padding:14px 16px;letter-spacing:1px}
+.admin-back{display:inline-block;margin-top:26px;font-size:12.5px;letter-spacing:2px;color:var(--text-dim);cursor:pointer}
+.admin-back:hover{color:var(--face)}
+/* 轻提示 */
+.toast-msg{position:fixed;left:50%;bottom:46px;transform:translateX(-50%) translateY(10px);z-index:60;
+  background:rgba(10,15,20,.94);border:1px solid rgba(143,196,212,.4);color:var(--text);font-size:12.5px;
+  letter-spacing:1px;padding:10px 20px;border-radius:3px;opacity:0;pointer-events:none;transition:.25s;max-width:82vw;text-align:center}
+.toast-msg.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
@@ -1698,6 +1756,7 @@ function renderHome(){
   app.innerHTML = `
     <div class="home">
       <div class="kicker">三体 · 同人互动小说</div>
+      ${whoLine()}
       <img class="title-img" src="assets/title.webp" alt="面壁">
       <p class="sub">你的思想即是战场。选择成为隐藏战略的面壁者，或看穿一切的破壁人。
       每一次选择，都通向不同的结局。</p>
@@ -1729,6 +1788,7 @@ function markEnding(id){
   if(done.has(id)) return;
   done.add(id);
   try{ localStorage.setItem(ENDINGS_KEY, JSON.stringify([...done])); }catch(e){}
+  cloudTouch();
   notifyAchievements();   // 刚好集满某个角色/全部角色时弹出成就卡
 }
 /* 某个角色的剧情线结局：按该角色的入口节点前缀取，罗辑主线不吞自破线 */
@@ -1751,6 +1811,7 @@ function allEndingIds(){
 function clearEndings(){
   try{ localStorage.removeItem(ENDINGS_KEY); }catch(e){}
   try{ localStorage.removeItem(ACH_SEEN_KEY); }catch(e){}
+  cloudTouch();
   renderSelect();
 }
 
@@ -1858,6 +1919,7 @@ function notifyAchievements(){
   if(!fresh.length) return;
   fresh.forEach(a=>seen.add(a.id));
   try{ localStorage.setItem(ACH_SEEN_KEY, JSON.stringify([...seen])); }catch(e){}
+  cloudTouch();
   fresh.forEach((a,i)=> setTimeout(()=>showAchToast(a), i*5600));
 }
 
@@ -2129,7 +2191,7 @@ function savesRead(){
     return (o && typeof o === "object" && !Array.isArray(o)) ? o : {};
   }catch(e){ return {}; }
 }
-function savesWrite(o){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(o)); }catch(e){} }
+function savesWrite(o){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(o)); }catch(e){} cloudTouch(); }
 function savesCount(){
   const all = savesRead();
   return SAVE_SLOTS.filter(s=>all[s.id]).length;
@@ -2138,6 +2200,7 @@ function savesCount(){
 function writeSave(slotId, nodeId, mode){
   const sc = STORY[nodeId];
   if(!sc || !SAVE_SLOTS.some(s=>s.id === slotId)) return null;
+  if(!canSave()){ toastMsg("游客模式不能保存进度，请先注册或登录"); return null; }
   const all = savesRead();
   all[slotId] = {
     node: nodeId,
@@ -2152,6 +2215,7 @@ function writeSave(slotId, nodeId, mode){
 /* 自动存档：每进一章覆盖自动槽；关闭网页时再刷一次时间 */
 function autoSave(nodeId){
   if(!nodeId || !STORY[nodeId]) return;
+  if(!canSave()) return;            // 游客不存档
   writeSave("auto", nodeId, "auto");
   refreshSaveTab();
 }
@@ -2398,16 +2462,436 @@ document.addEventListener("visibilitychange", ()=>{
   if(document.visibilityState === "hidden" && currentStoryId) autoSave(currentStoryId);
 });
 
+/* ============================================================
+   账号体系（Supabase 云端）
+   注册 / 用户名密码登录 / 游客登录 / 管理员登录 / 云端存档
+   ============================================================ */
+const SB_URL = "https://gmiwchvbqafjrxyhgfra.supabase.co";
+const SB_KEY = "sb_publishable_vTJ0x7ya7VrbMC6CcVfjZg_3to54lnV";
+const AUTH_KEY = "santi_auth_v1";
+const ADMIN_SQL_HINT = "update public.profiles set role='admin' where username='逺風';";
+let AUTH = null;
+let authMode = "login";          // login | register | admin
+let authBusy = false;
+
+function escHtml(s){
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+/* 用户名 → 内部邮箱（账号系统只认邮箱，这里做可逆的固定映射，前端算、前端用） */
+function emailFor(name){
+  let b64 = "";
+  try{ b64 = btoa(unescape(encodeURIComponent(name))); }catch(e){ b64 = ""; }
+  b64 = b64.replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"").toLowerCase();
+  return "u_" + b64 + "@santi.local";
+}
+function loadAuth(){
+  try{
+    const a = JSON.parse(localStorage.getItem(AUTH_KEY) || "null");
+    return (a && a.mode && a.user) ? a : null;
+  }catch(e){ return null; }
+}
+function saveAuth(a){
+  try{ a ? localStorage.setItem(AUTH_KEY, JSON.stringify(a)) : localStorage.removeItem(AUTH_KEY); }catch(e){}
+}
+AUTH = loadAuth();
+
+/* 轻提示 */
+let toastEl = null, toastTimer = 0;
+function toastMsg(text){
+  if(!toastEl){ toastEl = document.createElement("div"); toastEl.className = "toast-msg"; document.body.appendChild(toastEl); }
+  toastEl.textContent = text;
+  toastEl.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>toastEl.classList.remove("show"), 2600);
+}
+
+/* —— Supabase 请求 —— */
+async function sbFetch(path, opt){
+  opt = opt || {};
+  const headers = Object.assign({ "apikey": SB_KEY, "Content-Type": "application/json" }, opt.headers || {});
+  headers.Authorization = "Bearer " + (opt.token || SB_KEY);
+  const res = await fetch(SB_URL + path, {
+    method: opt.method || "GET",
+    headers: headers,
+    body: opt.body != null ? JSON.stringify(opt.body) : undefined
+  });
+  const txt = await res.text();
+  let data = null;
+  if(txt){ try{ data = JSON.parse(txt); }catch(e){ data = txt; } }
+  if(!res.ok){
+    const msg = (data && (data.message || data.msg || data.error_description || data.error)) || ("请求失败 HTTP " + res.status);
+    const err = new Error(msg);
+    err.status = res.status; err.data = data;
+    throw err;
+  }
+  return data;
+}
+function applySession(t){
+  AUTH.access = t.access_token;
+  AUTH.refresh = t.refresh_token;
+  AUTH.expiresAt = Date.now() + ((t.expires_in || 3600) * 1000);
+  saveAuth(AUTH);
+}
+async function sbRefresh(){
+  if(!AUTH || !AUTH.refresh) return false;
+  try{
+    const t = await sbFetch("/auth/v1/token?grant_type=refresh_token", {
+      method:"POST", body:{ refresh_token: AUTH.refresh }
+    });
+    applySession(t);
+    return true;
+  }catch(e){ return false; }
+}
+async function ensureToken(){
+  if(!AUTH || AUTH.mode === "guest" || !AUTH.access) return null;
+  if(Date.now() > (AUTH.expiresAt || 0) - 120000){
+    const ok = await sbRefresh();
+    if(!ok) return null;
+  }
+  return AUTH.access;
+}
+async function sbProfile(uid){
+  const rows = await sbFetch("/rest/v1/profiles?select=id,username,role,created_at&id=eq." + encodeURIComponent(uid), { token: await ensureToken() });
+  return (rows && rows[0]) || null;
+}
+async function sbSignUp(username, password){
+  return sbFetch("/auth/v1/signup", {
+    method:"POST",
+    body:{ email: emailFor(username), password: password, data:{ username: username } }
+  });
+}
+async function sbSignIn(username, password){
+  return sbFetch("/auth/v1/token?grant_type=password", {
+    method:"POST",
+    body:{ email: emailFor(username), password: password }
+  });
+}
+
+/* —— 权限 & 存档开关 —— */
+function canSave(){ return !!(AUTH && AUTH.user && (AUTH.mode === "account" || AUTH.mode === "admin")); }
+function isAdmin(){ return !!(AUTH && AUTH.user && AUTH.user.role === "admin"); }
+
+/* —— 云端进度：整体同步 —— */
+function collectProgress(){
+  const readArr = k=>{ try{ return JSON.parse(localStorage.getItem(k) || "[]"); }catch(e){ return []; } };
+  return {
+    v: 1,
+    saves: savesRead(),
+    endings: readArr(ENDINGS_KEY),
+    ach: readArr(ACH_SEEN_KEY),
+    node: currentStoryId || null,
+    name: AUTH && AUTH.user ? AUTH.user.username : ""
+  };
+}
+function clearLocalProgress(){
+  try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+  try{ localStorage.removeItem(ENDINGS_KEY); }catch(e){}
+  try{ localStorage.removeItem(ACH_SEEN_KEY); }catch(e){}
+}
+function applyCloudProgress(row){
+  if(!row || !row.data || typeof row.data !== "object") return false;
+  const d = row.data;
+  let filled = false;
+  if(d.saves && typeof d.saves === "object"){ localStorage.setItem(SAVE_KEY, JSON.stringify(d.saves)); filled = true; }
+  if(Array.isArray(d.endings) && d.endings.length){ localStorage.setItem(ENDINGS_KEY, JSON.stringify(d.endings)); filled = true; }
+  if(Array.isArray(d.ach) && d.ach.length){ localStorage.setItem(ACH_SEEN_KEY, JSON.stringify(d.ach)); filled = true; }
+  return filled;
+}
+async function sbLoadProgress(uid){
+  const rows = await sbFetch("/rest/v1/progress?select=data,updated_at&user_id=eq." + encodeURIComponent(uid), { token: await ensureToken() });
+  return (rows && rows[0]) || null;
+}
+async function sbSaveProgress(){
+  if(!canSave()) return;
+  const token = await ensureToken();
+  if(!token) return;
+  await sbFetch("/rest/v1/progress", {
+    method:"POST",
+    token: token,
+    headers:{ "Prefer": "resolution=merge-duplicates,return=minimal" },
+    body:{ user_id: AUTH.user.id, data: collectProgress(), updated_at: new Date().toISOString() }
+  });
+}
+let cloudTimer = 0, cloudFail = 0;
+function cloudTouch(){
+  if(!canSave()) return;
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(()=>{
+    sbSaveProgress().then(()=>{ cloudFail = 0; }).catch(()=>{
+      cloudFail++;
+      if(cloudFail === 1) toastMsg("云端同步暂时失败，进度已存在本机，会自动重试");
+      if(cloudFail < 5) cloudTouch();
+    });
+  }, 700);
+}
+
+/* —— 登录 / 注册页 —— */
+const EYE_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.6"/></svg>';
+const EYE_SHUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2 12s3.6-6 10-6c2 0 3.7.6 5.2 1.4M22 12s-3.6 6-10 6c-2 0-3.7-.6-5.2-1.4"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
+
+function renderLogin(msg, ok){
+  document.body.classList.add("auth-mode");
+  document.body.classList.remove("kg-mode");
+  const reg = authMode === "register";
+  const msgHTML = msg ? `<div class="auth-msg ${ok ? "ok" : ""}" id="authMsg">${escHtml(msg)}</div>` : `<div class="auth-msg" id="authMsg"></div>`;
+  const regFields = reg ? `
+        <div class="auth-field">
+          <label class="auth-label" for="auPass2">确认密码</label>
+          <div class="auth-pwd">
+            <input class="auth-input" id="auPass2" type="password" maxlength="64" placeholder="请再输入一次" autocomplete="new-password">
+            <button type="button" class="auth-eye" data-eye="auPass2" title="显示 / 隐藏密码" aria-label="显示或隐藏密码">${EYE_OPEN}</button>
+          </div>
+        </div>` : "";
+  const altLine = reg
+    ? `已有账号？<a data-mode="login">直接登录</a>`
+    : `还没有账号？<a data-mode="register">注册一个</a> · <a id="guestGo">游客登录（不保存进度）</a>`;
+  app.innerHTML = `
+    <div class="auth">
+      <div class="auth-brand">三 体 · 面 壁 者 互 动 小 说</div>
+      <div class="auth-card">
+        <div class="auth-tabs">
+          <button type="button" class="auth-tab ${authMode === "login" ? "on" : ""}" data-mode="login">登录</button>
+          <button type="button" class="auth-tab ${authMode === "register" ? "on" : ""}" data-mode="register">注册</button>
+          <button type="button" class="auth-tab ${authMode === "admin" ? "on" : ""}" data-mode="admin">管理员</button>
+        </div>
+        <form id="authForm" autocomplete="off" novalidate>
+          <div class="auth-field">
+            <label class="auth-label" for="auUser">用户名</label>
+            <input class="auth-input" id="auUser" maxlength="24" placeholder="${authMode === "admin" ? "管理员用户名" : "请输入用户名"}" autocomplete="username">
+          </div>
+          <div class="auth-field">
+            <label class="auth-label" for="auPass">密码</label>
+            <div class="auth-pwd">
+              <input class="auth-input" id="auPass" type="password" maxlength="64" placeholder="至少 6 位" autocomplete="${reg ? "new-password" : "current-password"}">
+              <button type="button" class="auth-eye" data-eye="auPass" title="显示 / 隐藏密码" aria-label="显示或隐藏密码">${EYE_OPEN}</button>
+            </div>
+          </div>
+          ${regFields}
+          ${msgHTML}
+          <button class="auth-submit" id="authGo" type="submit">${reg ? "注 册" : "登 录"}</button>
+        </form>
+        <div class="auth-alt">${altLine}</div>
+      </div>
+      <div class="auth-foot">
+        账号进度保存在云端，换设备登录同一账号即可继续。<br>
+        游客可直接试玩，但不会保存任何进度。<br>
+        非商业学习用途 · 原著：刘慈欣《三体》
+      </div>
+    </div>`;
+  /* 密码显示 / 隐藏 */
+  app.querySelectorAll("[data-eye]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const input = document.getElementById(btn.dataset.eye);
+      if(!input) return;
+      const show = input.type === "password";
+      input.type = show ? "text" : "password";
+      btn.innerHTML = show ? EYE_SHUT : EYE_OPEN;
+      btn.classList.toggle("on", show);
+    });
+  });
+  /* 切换模式 */
+  app.querySelectorAll("[data-mode]").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      if(authBusy) return;
+      authMode = b.dataset.mode;
+      renderLogin();
+      const u = document.getElementById("auUser");
+      if(u) u.focus();
+    });
+  });
+  const g = document.getElementById("guestGo");
+  if(g) g.addEventListener("click", doGuest);
+  const form = document.getElementById("authForm");
+  if(form) form.addEventListener("submit", doAuthSubmit);
+  document.body.classList.remove("auth-mode");  /* 由 .auth 自身占满视口，这里只在需要隐藏 BGM 时加 */
+  document.body.classList.add("auth-mode");
+  const u = document.getElementById("auUser");
+  if(u) setTimeout(()=>u.focus(), 80);
+}
+function setAuthMsg(text, ok){
+  const el = document.getElementById("authMsg");
+  if(!el) return;
+  el.textContent = text || "";
+  el.classList.toggle("ok", !!ok);
+}
+function friendlyAuthError(err, mode){
+  const m = String((err && err.message) || "");
+  if(/Invalid login credentials/i.test(m)) return "用户名或密码不正确";
+  if(/already registered|already exists|User already exists/i.test(m)) return "这个用户名已经被注册了，换一个试试";
+  if(/Email not confirmed/i.test(m)) return "账号还需要邮箱验证，请联系管理员开启自动确认";
+  if(/Password should be|password.*6/i.test(m)) return "密码不符合要求，至少 6 位";
+  if(/signups? not allowed|disabled/i.test(m)) return "当前已关闭注册，请稍后再试";
+  if(/Failed to fetch|NetworkError|Load failed/i.test(m)) return "连不上服务器，请检查网络后重试";
+  if(/rate limit|too many/i.test(m)) return "操作太频繁，稍等一分钟再试";
+  return m || (mode === "register" ? "注册失败，请稍后重试" : "登录失败，请稍后重试");
+}
+async function doAuthSubmit(e){
+  e.preventDefault();
+  if(authBusy) return;
+  const userEl = document.getElementById("auUser"), passEl = document.getElementById("auPass");
+  const pass2El = document.getElementById("auPass2");
+  const username = (userEl ? userEl.value : "").trim();
+  const password = passEl ? passEl.value : "";
+  const btn = document.getElementById("authGo");
+  const fail = m=>{ setAuthMsg(m, false); };
+  if(username.length < 2) return fail("用户名至少 2 个字符");
+  if(!/^[\u4e00-\u9fa5A-Za-z0-9_\-]{2,24}$/.test(username)) return fail("用户名只能用中文、字母、数字、下划线，2–24 个字符");
+  if(password.length < 6) return fail("密码至少 6 位");
+  if(authMode === "register" && (!pass2El || pass2El.value !== password)) return fail("两次输入的密码不一致，请重新确认");
+
+  authBusy = true;
+  setAuthMsg(authMode === "register" ? "正在创建账号…" : "正在验证身份…", true);
+  if(btn){ btn.disabled = true; btn.textContent = authMode === "register" ? "创建中…" : "验证中…"; }
+
+  try{
+    if(authMode === "register"){
+      const t = await sbSignUp(username, password);
+      if(!t || !t.access_token) throw new Error("注册成功但未返回会话，请改用登录页重试");
+      AUTH = { mode:"account", access:t.access_token, refresh:t.refresh_token, expiresAt: Date.now() + ((t.expires_in || 3600) * 1000), user:{ id:t.user.id, username:username, role:"player", created_at:t.user.created_at } };
+      saveAuth(AUTH);
+      const prof = await sbProfile(t.user.id).catch(()=>null);
+      if(prof){ AUTH.user.role = prof.role || "player"; AUTH.user.username = prof.username || username; AUTH.user.created_at = prof.created_at; saveAuth(AUTH); }
+      await enterGame(true);
+      return;
+    }
+    const t = await sbSignIn(username, password);
+    AUTH = { mode: authMode === "admin" ? "admin" : "account", access:t.access_token, refresh:t.refresh_token, expiresAt: Date.now() + ((t.expires_in || 3600) * 1000), user:{ id:t.user.id, username:username, role:"player" } };
+    saveAuth(AUTH);
+    let prof = null;
+    try{ prof = await sbProfile(t.user.id); }catch(e2){}
+    if(prof){ AUTH.user.role = prof.role || "player"; AUTH.user.username = prof.username || username; AUTH.user.created_at = prof.created_at; saveAuth(AUTH); }
+    if(authMode === "admin" && AUTH.user.role !== "admin"){
+      AUTH = null; saveAuth(null);
+      setAuthMsg("这个账号还不是管理员。请先在 Supabase SQL Editor 执行：" + ADMIN_SQL_HINT, false);
+      return;
+    }
+    await enterGame(false);
+  }catch(err){
+    if(AUTH && AUTH.user && !AUTH.user.role) AUTH = null;
+    saveAuth(AUTH && AUTH.mode === "guest" ? AUTH : null);
+    AUTH = null;
+    saveAuth(null);
+    fail(friendlyAuthError(err, authMode));
+  }finally{
+    authBusy = false;
+    if(btn){ btn.disabled = false; btn.textContent = authMode === "register" ? "注 册" : "登 录"; }
+  }
+}
+function doGuest(){
+  AUTH = { mode:"guest", user:{ id:"guest", username:"游客", role:"guest" } };
+  saveAuth(AUTH);
+  clearLocalProgress();          /* 游客不继承任何账本存档 */
+  enterGame(false).catch(()=>{});
+}
+/* 登录成功之后：拉云端存档 → 进主页 → 放 BGM */
+async function enterGame(freshAccount){
+  if(canSave()){
+    try{
+      const row = await sbLoadProgress(AUTH.user.id);
+      const filled = applyCloudProgress(row);
+      if(!filled) clearLocalProgress();   /* 云端还没有进度：清掉本机残留，避免串号 */
+    }catch(e){
+      toastMsg("读取云端进度失败，本次先使用本机进度");
+    }
+  }
+  authMode = "login";
+  document.body.classList.remove("auth-mode");
+  if(typeof currentStoryId !== "undefined") currentStoryId = null;
+  history.replaceState(null, "", "#home");
+  router();
+  if(window.santiBgmWarm) window.santiBgmWarm();
+}
+function logout(silent, msg){
+  AUTH = null;
+  saveAuth(null);
+  clearTimeout(cloudTimer);
+  clearLocalProgress();
+  authMode = "login";
+  history.replaceState(null, "", "#login");
+  renderLogin(silent ? "" : (msg || "已退出登录"), false);
+}
+
+/* —— 首页上的用户条 —— */
+function whoLine(){
+  if(!AUTH) return "";
+  if(AUTH.mode === "guest"){
+    return `<div class="who"><span class="guest">游客模式 · 进度不会保存</span><a onclick="logout()">登录 / 注册</a></div>`;
+  }
+  const admin = isAdmin();
+  const mgr = admin ? `<a onclick="location.hash='#admin'">管理后台</a>` : "";
+  return `<div class="who"><b>${escHtml(AUTH.user.username)}</b><span>${admin ? "管理员" : "云端存档已同步"}</span>${mgr}<a onclick="logout()">退出登录</a></div>`;
+}
+
+/* —— 管理员后台 —— */
+function fmtFullTime(t){
+  if(!t) return "—";
+  const d = new Date(t), p = n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+async function renderAdmin(){
+  document.body.classList.remove("auth-mode", "kg-mode");
+  app.innerHTML = `
+    <div class="admin">
+      <h1>管 理 员 后 台</h1>
+      <div class="admin-sub">当前身份：${escHtml(AUTH.user.username)} · 管理员</div>
+      <div id="adminBody"><div class="admin-sub">正在读取注册用户…</div></div>
+      <div class="admin-back" onclick="location.hash='#home'">← 返回主页</div>
+    </div>`;
+  let rows = [];
+  try{
+    const token = await ensureToken();
+    if(!token) throw new Error("登录状态已过期，请重新登录");
+    rows = await sbFetch("/rest/v1/profiles?select=id,username,role,created_at&order=created_at.asc", { token: token });
+  }catch(e){
+    document.getElementById("adminBody").innerHTML = `<div class="admin-note">读取失败：${escHtml(e.message)}<br>请到首页退出后重新登录一次。</div>`;
+    return;
+  }
+  rows = rows || [];
+  const admins = rows.filter(r=>r.role === "admin").length;
+  const body = `
+    <div class="admin-stat">
+      <div><b>${rows.length}</b>注册用户数</div>
+      <div><b>${admins}</b>管理员账号</div>
+    </div>
+    <table class="admin-table">
+      <thead><tr><th style="width:52px">#</th><th>用户名</th><th style="width:96px">角色</th><th style="width:190px">注册时间</th></tr></thead>
+      <tbody>
+        ${rows.map((r,i)=>`<tr>
+          <td>${i+1}</td>
+          <td>${escHtml(r.username)}</td>
+          <td class="${r.role === "admin" ? "role-admin" : ""}">${r.role === "admin" ? "管理员" : "玩家"}</td>
+          <td>${fmtFullTime(r.created_at)}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>
+    <div class="admin-note">
+      这里只读取用户名、角色与注册时间，<b>看不到任何人的密码</b>（密码由 Supabase 加密托管，前端与后台都无法获取）。<br>
+      「交流区」上线后，玩家发布内容的审核 / 删除入口会加在本页，普通玩家没有管理权限。
+    </div>`;
+  const box = document.getElementById("adminBody");
+  if(box) box.innerHTML = body;
+}
+
 /* —— hash 路由：根据网址 # 后面的内容切换页面 —— */
 function router(){
   typeSfxStop();   // 离开当前页时，把还在响的打字声收掉
   closeSavePanel(true);// 切页时立刻收起存档面板
+  /* 没有登录态：无论如何都先看登录页，且登录页不放 BGM */
+  if(!AUTH){
+    document.body.classList.add("auth-mode");
+    renderLogin();
+    if(location.hash !== "#login") history.replaceState(null, "", "#login");
+    window.scrollTo(0,0);
+    return;
+  }
+  document.body.classList.remove("auth-mode");
   const hash = location.hash.replace(/^#/,"");
   if(!hash.startsWith("story/")){ currentStoryId = null; storyHist = []; }
   document.body.classList.toggle("kg-mode", hash === "archive");
   if(hash.startsWith("story/")){ renderStory(hash.split("/")[1]); }
   else if(hash === "select"){ renderSelect(); }
   else if(hash === "archive"){ renderArchive(); }
+  else if(hash === "admin"){ if(isAdmin()) renderAdmin(); else { history.replaceState(null,"","#home"); renderHome(); } }
   else { renderHome(); }
   window.scrollTo(0,0);
 }
@@ -2427,10 +2911,20 @@ window.addEventListener("load", router);
   const BGM_SRC = "assets/bgm.mp3";
   function ensureSrc(){ if(!bgm.getAttribute("src")) bgm.src = BGM_SRC; }
   function tryPlay(){ ensureSrc(); bgm.play().catch(()=>{}); }
-  function warm(){ ensureSrc(); bgm.load(); tryPlay(); }
-  /* 浏览器拦截无声自动播放时，在用户首次点击/按键后解锁播放 */
-  function unlock(){ warm(); document.removeEventListener("pointerdown", unlock); document.removeEventListener("keydown", unlock); }
-  if("requestIdleCallback" in window){ requestIdleCallback(warm, {timeout:4000}); } else { setTimeout(warm, 4000); }
+  let bgmWarmed = false;
+  function warm(){
+    if(bgmWarmed) return;
+    bgmWarmed = true;
+    ensureSrc(); bgm.load(); tryPlay();
+  }
+  window.santiBgmWarm = warm;     /* 登录页静音，登录成功后由 enterGame 调用一次 */
+  /* 浏览器拦截无声自动播放时，在用户首次点击/按键后解锁播放（仅在已登录状态下） */
+  function unlock(){
+    if(!AUTH) return;
+    warm();
+    document.removeEventListener("pointerdown", unlock);
+    document.removeEventListener("keydown", unlock);
+  }
   document.addEventListener("pointerdown", unlock);
   document.addEventListener("keydown", unlock);
   btn.addEventListener("click", ()=>{

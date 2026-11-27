@@ -2395,6 +2395,7 @@ function saveAct(kind, slotId, el){
 
   if(kind === "save"){
     if(!inStoryPage()) return;
+    if(!canSave()){ toastMsg("游客模式不能保存进度，请先注册或登录"); return; }
     const exist = savesRead()[slotId];
     if(el && exist && el.dataset.wait !== "1"){
       el.dataset.wait = "1"; el.textContent = "确认覆盖";
@@ -2474,6 +2475,7 @@ let AUTH = null;
 let authMode = "login";          // login | register | admin
 let authBusy = false;
 
+function setHashSafe(h){ try{ history.replaceState(null, "", h); }catch(e){ location.hash = h; } }
 function escHtml(s){
   return String(s == null ? "" : s).replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 }
@@ -2746,7 +2748,7 @@ async function doAuthSubmit(e){
   try{
     if(authMode === "register"){
       const t = await sbSignUp(username, password);
-      if(!t || !t.access_token) throw new Error("注册成功但未返回会话，请改用登录页重试");
+      if(!t || !t.access_token) throw new Error("用户名可能已被注册，或注册暂未开启，请换一个用户名试试");
       AUTH = { mode:"account", access:t.access_token, refresh:t.refresh_token, expiresAt: Date.now() + ((t.expires_in || 3600) * 1000), user:{ id:t.user.id, username:username, role:"player", created_at:t.user.created_at } };
       saveAuth(AUTH);
       const prof = await sbProfile(t.user.id).catch(()=>null);
@@ -2797,7 +2799,7 @@ async function enterGame(freshAccount){
   authMode = "login";
   document.body.classList.remove("auth-mode");
   if(typeof currentStoryId !== "undefined") currentStoryId = null;
-  history.replaceState(null, "", "#home");
+  setHashSafe("#home");
   router();
   if(window.santiBgmWarm) window.santiBgmWarm();
 }
@@ -2806,8 +2808,9 @@ function logout(silent, msg){
   saveAuth(null);
   clearTimeout(cloudTimer);
   clearLocalProgress();
+  if(window.santiBgmStop) window.santiBgmStop();   /* 回登录页：BGM 停掉 */
   authMode = "login";
-  history.replaceState(null, "", "#login");
+  setHashSafe("#login");
   renderLogin(silent ? "" : (msg || "已退出登录"), false);
 }
 
@@ -2880,7 +2883,7 @@ function router(){
   if(!AUTH){
     document.body.classList.add("auth-mode");
     renderLogin();
-    if(location.hash !== "#login") history.replaceState(null, "", "#login");
+    if(location.hash !== "#login") setHashSafe("#login");
     window.scrollTo(0,0);
     return;
   }
@@ -2891,7 +2894,7 @@ function router(){
   if(hash.startsWith("story/")){ renderStory(hash.split("/")[1]); }
   else if(hash === "select"){ renderSelect(); }
   else if(hash === "archive"){ renderArchive(); }
-  else if(hash === "admin"){ if(isAdmin()) renderAdmin(); else { history.replaceState(null,"","#home"); renderHome(); } }
+  else if(hash === "admin"){ if(isAdmin()) renderAdmin(); else { setHashSafe("#home"); renderHome(); } }
   else { renderHome(); }
   window.scrollTo(0,0);
 }
@@ -2918,6 +2921,7 @@ window.addEventListener("load", router);
     ensureSrc(); bgm.load(); tryPlay();
   }
   window.santiBgmWarm = warm;     /* 登录页静音，登录成功后由 enterGame 调用一次 */
+  window.santiBgmStop = function(){ try{ bgm.pause(); }catch(e){} bgm.removeAttribute("src"); try{ bgm.load(); }catch(e){} bgmWarmed = false; };
   /* 浏览器拦截无声自动播放时，在用户首次点击/按键后解锁播放（仅在已登录状态下） */
   function unlock(){
     if(!AUTH) return;
@@ -2961,3 +2965,4 @@ window.addEventListener("load", router);
 </script>
 </body>
 </html>
+

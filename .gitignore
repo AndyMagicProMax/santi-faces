@@ -9,3 +9,7 @@ kg_graph.js
 Thumbs.db
 desktop.ini
 _shot_*.png更新上线.bat
+assets/*.png
+_*.png
+_*.js
+_*.ps1

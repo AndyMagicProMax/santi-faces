@@ -36,7 +36,7 @@ body{
    这样无论页面多长、滚到哪里、窗口多大，蒙版都完整覆盖，不会出现横向明暗接缝 */
 body::before{
   content:"";position:fixed;left:0;top:0;right:0;bottom:0;z-index:-3;pointer-events:none;
-  background:url("assets/background.png") center center / cover no-repeat;
+  background:url("assets/background.webp") center center / cover no-repeat;
 }
 body::after{
   content:"";position:fixed;left:0;top:0;right:0;bottom:0;z-index:-2;pointer-events:none;
@@ -465,7 +465,7 @@ body.kg-mode .kg-frame-wrap{height:calc(100vh - 142px);min-height:560px}
 <main id="app"></main>
 
 <!-- 背景音乐：全局控件（右上角） -->
-<audio id="bgm" src="assets/bgm.mp3" loop preload="auto"></audio>
+<audio id="bgm" loop preload="none"></audio>
 <div id="bgm-control" class="bgm-control">
   <div id="bgm-panel" class="bgm-panel">
     <span class="bgm-vol-label">音量</span>
@@ -1583,14 +1583,14 @@ const STORY = {
 
 /* 角色立绘：选角卡低透明度背景 + 故事页右下角；name 为选角卡名字UI图 */
 const PORTRAITS = {
-  luoji:  { img:"assets/luoji.png",  name:"assets/luoji-name.png",  alt:"罗辑" },
-  taylor: { img:"assets/taylor.png", name:"assets/taylor-name.png", alt:"泰勒" },
-  reidiaz:{ img:"assets/reidiaz.png", name:"assets/reidiaz-name.png", alt:"雷迪亚兹" },
-  hines:  { img:"assets/hines.png",  name:"assets/hines-name.png",  alt:"希恩斯" },
-  vonneumann:{ img:"assets/vonneumann.png", name:"assets/vonneumann-name.png", alt:"冯·诺依曼" },
-  mozi:   { img:"assets/mozi.png", name:"assets/mozi-name.png", alt:"墨子" },
-  yamazaki:{ img:"assets/yamazaki.png", name:"assets/yamazaki-name.png", alt:"山杉惠子" },
-  self:   { img:"assets/luoji.png", name:"assets/luoji-self-name.png", alt:"罗辑（自破）" }
+  luoji:  { img:"assets/luoji.webp",  name:"assets/luoji-name.webp",  alt:"罗辑" },
+  taylor: { img:"assets/taylor.webp", name:"assets/taylor-name.webp", alt:"泰勒" },
+  reidiaz:{ img:"assets/reidiaz.webp", name:"assets/reidiaz-name.webp", alt:"雷迪亚兹" },
+  hines:  { img:"assets/hines.webp",  name:"assets/hines-name.webp",  alt:"希恩斯" },
+  vonneumann:{ img:"assets/vonneumann.webp", name:"assets/vonneumann-name.webp", alt:"冯·诺依曼" },
+  mozi:   { img:"assets/mozi.webp", name:"assets/mozi-name.webp", alt:"墨子" },
+  yamazaki:{ img:"assets/yamazaki.webp", name:"assets/yamazaki-name.webp", alt:"山杉惠子" },
+  self:   { img:"assets/luoji.webp", name:"assets/luoji-self-name.webp", alt:"罗辑（自破）" }
 };
 /* 剧情场景前缀 → 立绘角色 */
 function scenePortrait(sceneId){
@@ -1698,11 +1698,11 @@ function renderHome(){
   app.innerHTML = `
     <div class="home">
       <div class="kicker">三体 · 同人互动小说</div>
-      <img class="title-img" src="assets/title.png" alt="面壁">
+      <img class="title-img" src="assets/title.webp" alt="面壁">
       <p class="sub">你的思想即是战场。选择成为隐藏战略的面壁者，或看穿一切的破壁人。
       每一次选择，都通向不同的结局。</p>
-      <button class="ui-btn" onclick="location.hash='#select'"><img src="assets/btn-start.png" alt="开始游戏"></button>
-      <button class="ui-btn" onclick="location.hash='#archive'"><img src="assets/btn-graph.png" alt="《三体》知识图谱"></button>
+      <button class="ui-btn" onclick="location.hash='#select'"><img src="assets/btn-start.webp" alt="开始游戏"></button>
+      <button class="ui-btn" onclick="location.hash='#archive'"><img src="assets/btn-graph.webp" alt="《三体》知识图谱"></button>
       <div class="save-dock">
         <button class="save-tab" id="saveTab"
           onmouseenter="openSavePanel(this,false)" onmouseleave="scheduleSaveClose()"
@@ -1771,23 +1771,23 @@ orbit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="
 };
 const ACHIEVEMENTS = [
   {id:"ach_taylor",  roleId:"taylor",     group:"face",    who:"泰勒",                      name:"幽灵舰队",              icon:ACH_ICONS.ship,
-   desc:"达成「幽灵舰队」与「破壁之后」两个结局", bg:"assets/ach-taylor.png"},
+   desc:"达成「幽灵舰队」与「破壁之后」两个结局", bg:"assets/ach-taylor.webp"},
   {id:"ach_reidiaz", roleId:"reidiaz",    group:"face",    who:"雷迪亚兹",                  name:"一百零七万枚太阳",        icon:ACH_ICONS.sun,
-   desc:"达成「偏移」与「石头」两个结局", bg:"assets/ach-reidiaz.png"},
+   desc:"达成「偏移」与「石头」两个结局", bg:"assets/ach-reidiaz.webp"},
   {id:"ach_hines",   roleId:"hines",      group:"face",    who:"希恩斯",                    name:"「思想钢印」",            icon:ACH_ICONS.stamp,
-   desc:"达成「火种」与「冰面破裂」两个结局", bg:"assets/ach-hines.png"},
+   desc:"达成「火种」与「冰面破裂」两个结局", bg:"assets/ach-hines.webp"},
   {id:"ach_luoji",   roleId:"luoji",      group:"face",    who:"罗辑",                      name:"「黑暗森林」",            icon:ACH_ICONS.forest,
-   desc:"达成「执剑」与「犹豫」两个结局", bg:"assets/ach-luoji.png"},
+   desc:"达成「执剑」与「犹豫」两个结局", bg:"assets/ach-luoji.webp"},
   {id:"ach_vn",      roleId:"vonneumann", group:"breaker", who:"破壁人一号 · 冯·诺依曼",    name:"无法被指挥的死者",        icon:ACH_ICONS.dead,
-   desc:"达成「破壁成功」与「打草惊蛇」两个结局", bg:"assets/ach-vn.png"},
+   desc:"达成「破壁成功」与「打草惊蛇」两个结局", bg:"assets/ach-vn.webp"},
   {id:"ach_mozi",    roleId:"mozi",       group:"breaker", who:"破壁人二号 · 墨子",         name:"「主不在乎」",            icon:ACH_ICONS.eye,
-   desc:"达成「破壁」与「反噬」两个结局", bg:"assets/ach-mozi.png"},
+   desc:"达成「破壁」与「反噬」两个结局", bg:"assets/ach-mozi.webp"},
   {id:"ach_yamasan", roleId:"yamazaki",   group:"breaker", who:"山杉惠子",                  name:"两百年后的证词",          icon:ACH_ICONS.hourglass,
-   desc:"达成「剖腹」与「沉默」两个结局", bg:"assets/ach-yamazaki.png"},
+   desc:"达成「剖腹」与「沉默」两个结局", bg:"assets/ach-yamazaki.webp"},
   {id:"ach_self",    roleId:"self",       group:"breaker", who:"罗辑 · 破壁人视角",         name:"破不了的壁",              icon:ACH_ICONS.wall,
-   desc:"达成「自破其壁」与「没有破壁人」两个结局", bg:"assets/ach-self.png"},
+   desc:"达成「自破其壁」与「没有破壁人」两个结局", bg:"assets/ach-self.webp"},
   {id:"ach_all",     roleId:null,         group:"all",     who:"全部角色",                  name:"「这是计划的一部分」",
-   desc:"达成所有面壁者与破壁人的全部剧情线", icon:ACH_ICONS.orbit, bg:"assets/ach-all.png", final:true}
+   desc:"达成所有面壁者与破壁人的全部剧情线", icon:ACH_ICONS.orbit, bg:"assets/ach-all.webp", final:true}
 ];
 /* 某个角色的两条结局是否都已走到 */
 function roleAllDone(roleId){
@@ -2423,10 +2423,14 @@ window.addEventListener("load", router);
   const SVG_ON  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 5 6 9H3v6h3l5 4V5z" fill="currentColor" stroke="none"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
   const SVG_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 5 6 9H3v6h3l5 4V5z" fill="currentColor" stroke="none"/><line x1="16" y1="9" x2="21" y2="15"/><line x1="21" y1="9" x2="16" y2="15"/></svg>';
   function paint(){ btn.innerHTML = (bgm.muted || bgm.volume === 0) ? SVG_OFF : SVG_ON; }
-  function tryPlay(){ bgm.play().catch(()=>{}); }
+  /* 首屏不预载 7MB 音频：先出画面，等浏览器空闲再预热 */
+  const BGM_SRC = "assets/bgm.mp3";
+  function ensureSrc(){ if(!bgm.getAttribute("src")) bgm.src = BGM_SRC; }
+  function tryPlay(){ ensureSrc(); bgm.play().catch(()=>{}); }
+  function warm(){ ensureSrc(); bgm.load(); tryPlay(); }
   /* 浏览器拦截无声自动播放时，在用户首次点击/按键后解锁播放 */
-  function unlock(){ tryPlay(); document.removeEventListener("pointerdown", unlock); document.removeEventListener("keydown", unlock); }
-  tryPlay();
+  function unlock(){ warm(); document.removeEventListener("pointerdown", unlock); document.removeEventListener("keydown", unlock); }
+  if("requestIdleCallback" in window){ requestIdleCallback(warm, {timeout:4000}); } else { setTimeout(warm, 4000); }
   document.addEventListener("pointerdown", unlock);
   document.addEventListener("keydown", unlock);
   btn.addEventListener("click", ()=>{

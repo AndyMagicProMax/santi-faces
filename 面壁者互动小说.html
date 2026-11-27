@@ -473,6 +473,7 @@ body.kg-mode .kg-frame-wrap{height:calc(100vh - 142px);min-height:560px}
 .auth-input{width:100%;box-sizing:border-box;background:rgba(8,12,16,.7);border:1px solid var(--line);
   color:var(--text);font-family:inherit;font-size:14px;letter-spacing:1px;padding:10px 12px;border-radius:3px;outline:none;transition:.18s}
 .auth-input:focus{border-color:rgba(143,196,212,.7);box-shadow:0 0 0 2px rgba(143,196,212,.12)}
+.auth-input::placeholder{color:#5a6672;letter-spacing:1.5px}
 .auth-pwd{display:flex;align-items:center;gap:8px}
 .auth-eye{flex:none;background:transparent;border:1px solid var(--line);color:var(--text-dim);width:42px;height:40px;
   border-radius:3px;cursor:pointer;display:grid;place-items:center;transition:.18s}
@@ -2747,7 +2748,7 @@ function renderLogin(msg, ok){
         <form id="authForm" autocomplete="off" novalidate>
           <div class="auth-field">
             <label class="auth-label" for="auUser">用户名</label>
-            <input class="auth-input" id="auUser" maxlength="24" placeholder="${authMode === "admin" ? "管理员用户名" : "请输入用户名"}" autocomplete="username">
+            <input class="auth-input" id="auUser" maxlength="24" placeholder="用户名中英文皆支持" autocomplete="username">
           </div>
           <div class="auth-field">
             <label class="auth-label" for="auPass">密码</label>

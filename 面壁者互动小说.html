@@ -1,0 +1,2465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>面壁 · 三体互动小说</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%238fc4d4' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%238fc4d4'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
+<style>
+/* ============================================================
+   视觉样式（一般不用改，想换颜色就改下面 :root 里的色值）
+   ============================================================ */
+:root{
+  --bg:#070a0f;
+  --panel:rgba(16,22,29,.72);
+  --panel-2:rgba(21,28,36,.72);
+  --line:#1f2a33;
+  --text:#d8dee3;
+  --text-dim:#8a97a1;
+  --face:#8fc4d4;        /* 面壁者：冷青 */
+  --breaker:#c46a5a;      /* 破壁人：暗红 */
+  --gold:#c9b98a;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+html{background:#070a0f}
+body{
+  position:relative;z-index:0;      /* 让下面的背景层叠在自己的底色之上 */
+  color:var(--text);
+  font-family:"Noto Sans SC",system-ui,sans-serif;
+  line-height:1.9;
+  min-height:100vh;
+  background-color:#070a0f;
+}
+/* 背景图与压暗蒙版都固定在视口上，铺满整屏：
+   这样无论页面多长、滚到哪里、窗口多大，蒙版都完整覆盖，不会出现横向明暗接缝 */
+body::before{
+  content:"";position:fixed;left:0;top:0;right:0;bottom:0;z-index:-3;pointer-events:none;
+  background:url("assets/background.png") center center / cover no-repeat;
+}
+body::after{
+  content:"";position:fixed;left:0;top:0;right:0;bottom:0;z-index:-2;pointer-events:none;
+  background:linear-gradient(180deg,rgba(7,10,15,.60) 0%,rgba(7,10,15,.72) 55%,rgba(7,10,15,.80) 100%);
+}
+#app{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:40px 20px 80px}
+
+/* 卡片面板半透明毛玻璃，让背景图透出 */
+.role-card,.archive-card,details,.choice-btn{
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
+
+/* 通用元素 */
+h1,h2,h3{font-family:"Noto Serif SC",serif;font-weight:700}
+.btn{
+  display:inline-block;padding:12px 28px;margin:8px 6px;
+  background:transparent;color:var(--face);
+  border:1px solid var(--face);border-radius:2px;
+  font-family:inherit;font-size:15px;letter-spacing:2px;cursor:pointer;
+  transition:all .2s;
+}
+.btn:hover{background:rgba(143,196,212,.12)}
+.btn.ghost{color:var(--text-dim);border-color:var(--line)}
+.btn.danger{color:var(--breaker);border-color:var(--breaker)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+
+/* ===== 金属图片按钮（首页，保持原并排位置与大小） ===== */
+.ui-btn{
+  background:none;border:none;cursor:pointer;padding:0;margin:8px 6px;position:relative;
+  overflow:hidden;display:inline-block;vertical-align:middle;transition:transform .15s ease;
+}
+.ui-btn img{width:min(200px,34vw);height:auto;display:block;transition:filter .2s ease}
+.ui-btn:hover img{filter:brightness(1.28) drop-shadow(0 0 18px rgba(190,215,230,.45))}
+.ui-btn:active{transform:scale(.95)}
+/* 扫光：悬停时一道光从左滑过金属面 */
+.ui-btn::after{
+  content:"";position:absolute;top:0;left:-80%;width:45%;height:100%;
+  background:linear-gradient(105deg,transparent,rgba(255,255,255,.35),transparent);
+  transform:skewX(-20deg);transition:left .55s ease;pointer-events:none;
+}
+.ui-btn:hover::after{left:135%}
+
+/* ===== 首页 ===== */
+.home{text-align:center;padding-top:6vh}
+.home .kicker{color:var(--text-dim);letter-spacing:6px;font-size:13px;margin-bottom:12px}
+.title-img{display:block;width:min(340px,58vw);height:auto;margin:6px auto 8px;filter:drop-shadow(0 0 26px rgba(143,196,212,.30))}
+.home .sub{color:var(--text-dim);margin:14px auto 22px;max-width:480px;font-weight:300}
+.home .foot{margin-top:28px;font-size:12px;color:#55606a;letter-spacing:1px}
+
+/* ===== 选角页 ===== */
+.section-title{font-size:13px;letter-spacing:4px;color:var(--text-dim);margin:36px 0 14px;
+  border-left:3px solid var(--face);padding-left:10px}
+.section-title.breaker{border-left-color:var(--breaker)}
+.role-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.role-card{
+  background:var(--panel);border:1px solid var(--line);padding:18px;cursor:pointer;
+  transition:all .2s;
+}
+.role-card:hover{border-color:var(--face);transform:translateY(-2px)}
+.role-card.breaker:hover{border-color:var(--breaker)}
+.role-card.locked{opacity:.45;cursor:not-allowed}
+.role-card.locked:hover{transform:none;border-color:var(--line)}
+.role-card .no{font-size:12px;color:var(--text-dim);letter-spacing:2px}
+.role-card .name{font-family:"Noto Serif SC",serif;font-size:20px;margin:6px 0}
+.role-card.face .name{color:var(--face)}
+.role-card.breaker .name{color:var(--breaker)}
+.role-card .brief{font-size:13px;color:var(--text-dim);line-height:1.7}
+.role-card .tag{display:inline-block;margin-top:10px;font-size:11px;letter-spacing:1px;
+  padding:2px 8px;border:1px solid var(--line);color:var(--text-dim)}
+
+/* 带立绘的选角卡：立绘作低透明度背景，名字用发光字图，置于左上不挡脸 */
+.portrait-card{position:relative;overflow:hidden;min-height:180px}
+.portrait-card::before{
+  content:"";position:absolute;right:0;bottom:0;width:62%;height:100%;z-index:0;pointer-events:none;
+  background:var(--portrait) right bottom / contain no-repeat;
+  opacity:.18;
+}
+.portrait-card > *{position:relative;z-index:1}
+.portrait-card .name-img{display:block;height:38px;width:auto;max-width:120px;margin:2px 0 10px;
+  filter:drop-shadow(0 0 12px rgba(143,196,212,.35))}
+
+/* —— 剧情线达成板块（选角卡下方） —— */
+.role-cell{display:flex;flex-direction:column}
+.role-cell > .role-card{flex:0 0 auto}
+.line-panel{margin-top:8px;padding:10px 12px 8px;border:1px solid var(--line);border-radius:10px;
+  background:rgba(255,255,255,.02)}
+.lp-title{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;
+  letter-spacing:2px;color:var(--text-dim);margin-bottom:5px}
+.lp-count{letter-spacing:0;color:var(--face)}
+.line-panel.breaker .lp-count{color:var(--breaker)}
+.lp-item{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;
+  color:var(--text-dim);padding:3px 0;line-height:1.7}
+.lp-item .lp-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lp-item.done{color:var(--text)}
+.lp-badge{flex:none;font-size:11px;letter-spacing:1px;padding:1px 8px;border-radius:3px;
+  color:#d98f7f;border:1px solid rgba(196,106,90,.5);background:rgba(196,106,90,.12)}
+.lp-badge.done{color:#84d3a0;border-color:rgba(110,200,140,.55);background:rgba(110,200,140,.12)}
+
+/* —— 成就板块（所有选角卡下方） —— */
+.ach-panel{margin-top:26px;padding:16px 18px 18px;border:1px solid var(--line);border-radius:12px;
+  background:rgba(255,255,255,.02)}
+.ach-head{display:flex;align-items:center;gap:14px}
+.ach-bar-wrap{flex:1;display:flex;align-items:center;gap:12px;min-width:0}
+.ach-label{flex:none;font-size:12px;letter-spacing:2px;color:#5f9bd8}
+.ach-bar{position:relative;flex:1;height:11px;min-width:60px;border-radius:999px;
+  border:1px solid rgba(90,140,210,.45);background:rgba(70,120,190,.10);overflow:hidden}
+.ach-fill{height:100%;width:0;border-radius:999px;
+  background:linear-gradient(90deg,rgba(79,143,214,.55),#4f8fd6);
+  box-shadow:0 0 10px rgba(79,143,214,.45);transition:width .45s ease}
+.ach-pct{flex:none;min-width:42px;text-align:right;font-size:13px;letter-spacing:1px;color:#5f9bd8}
+.ach-clear{flex:none;padding:2px 14px;font-family:inherit;font-size:12px;letter-spacing:2px;line-height:1.9;
+  color:#33619f;background:rgba(51,97,159,.16);border:1px solid #33619f;border-radius:3px;
+  cursor:pointer;transition:all .2s}
+.ach-clear:hover{color:#5a8ed6;border-color:#5a8ed6;background:rgba(90,142,214,.18)}
+/* 成就条目区：分三组（面壁者线 / 破壁人线 / 全收集） */
+.ach-body{margin-top:14px;min-height:110px;padding:4px 2px 2px}
+.ach-group + .ach-group{margin-top:14px}
+.ach-gt{font-size:11px;letter-spacing:3px;color:var(--text-dim);margin:0 0 8px 2px}
+.ach-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+/* 成就卡：长方形卡框 + 左侧图标 + 成就文字；未解锁整体压低亮度 */
+.ach-card{position:relative;overflow:hidden;
+  display:flex;align-items:center;gap:12px;min-height:62px;padding:9px 14px;
+  border:1px solid rgba(255,255,255,.10);border-radius:8px;background:rgba(255,255,255,.02);
+  opacity:.55;transition:opacity .4s,border-color .4s,background .4s,box-shadow .4s}
+/* 成就卡底图：低透明度的角色意象图，靠右渐隐，不压文字 */
+.ach-card .ach-bg{position:absolute;inset:0;z-index:0;pointer-events:none;
+  background-image:var(--achbg);background-repeat:no-repeat;
+  background-position:right center;background-size:auto 180%;
+  opacity:.42;transition:opacity .4s;
+  -webkit-mask-image:linear-gradient(to right,transparent 34%,rgba(0,0,0,.5) 62%,#000 92%);
+  mask-image:linear-gradient(to right,transparent 34%,rgba(0,0,0,.5) 62%,#000 92%)}
+.ach-card > .ach-icon,.ach-card > .ach-meta,.ach-card > .ach-state{position:relative;z-index:1}
+.ach-card .ach-icon{flex:none;width:40px;height:40px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.03);
+  color:#8195a2;transition:all .4s}
+.ach-card .ach-icon svg{width:23px;height:23px}
+.ach-card .ach-meta{display:block;flex:1;min-width:0}
+.ach-card .ach-who{display:block;font-size:11px;letter-spacing:2px;color:var(--text-dim);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ach-card .ach-name{display:block;font-family:"Noto Serif SC",serif;font-size:15px;letter-spacing:1px;
+  color:#93a4ae;margin-top:2px;transition:color .4s}
+.ach-card .ach-desc{display:block;font-size:11px;color:var(--text-dim);margin-top:3px;line-height:1.6}
+.ach-card .ach-state{flex:none;font-size:10px;letter-spacing:1px;padding:1px 7px;border-radius:3px;
+  color:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.14)}
+/* 已解锁：恢复正常亮度 + 冷青描边发光 */
+.ach-card.on{opacity:1;border-color:rgba(143,196,212,.5);background:rgba(143,196,212,.08);
+  box-shadow:0 0 16px rgba(143,196,212,.14),inset 0 0 24px rgba(143,196,212,.05)}
+.ach-card.on .ach-icon{color:#cdeef9;border-color:rgba(143,196,212,.6);
+  box-shadow:0 0 14px rgba(143,196,212,.28);background:rgba(143,196,212,.12)}
+.ach-card.on .ach-name{color:#e2f2f7;text-shadow:0 0 12px rgba(143,196,212,.35)}
+.ach-card.on .ach-state{color:#84d3a0;border-color:rgba(110,200,140,.55);background:rgba(110,200,140,.12)}
+.ach-card.final{grid-column:1 / -1}
+/* 游玩中达成成就：页面下方弹出的提示卡 */
+.ach-toast{position:fixed;left:50%;bottom:26px;z-index:140;pointer-events:none;
+  transform:translate(-50%,18px);opacity:0;transition:opacity .45s ease,transform .45s ease;
+  min-width:330px;padding:12px 16px 14px;border-radius:12px;
+  background:rgba(12,18,26,.9);border:1px solid rgba(143,196,212,.45);
+  box-shadow:0 10px 40px rgba(0,0,0,.55),0 0 26px rgba(143,196,212,.18);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.ach-toast.show{opacity:1;transform:translate(-50%,0)}
+.ach-toast .toast-cap{font-size:11px;letter-spacing:4px;color:#8fc4d4;margin-bottom:8px;text-align:center}
+.ach-toast .ach-card{opacity:1;border-color:rgba(143,196,212,.5);background:rgba(143,196,212,.08);
+  box-shadow:none}
+@media(max-width:720px){
+  .ach-grid{grid-template-columns:1fr}
+  .ach-head{flex-wrap:wrap}
+  .ach-clear{order:2}
+}
+
+/* ===== 剧情页 ===== */
+.story-head{display:flex;justify-content:space-between;align-items:baseline;
+  border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:24px}
+.story-head .chapter{font-family:"Noto Serif SC",serif;color:var(--gold);letter-spacing:2px;font-size:15px}
+.story-head .back{color:var(--text-dim);font-size:13px;cursor:pointer;text-decoration:underline}
+.speaker{color:var(--face);font-size:14px;letter-spacing:2px;margin-bottom:10px}
+.speaker.breaker{color:var(--breaker)}
+.story-text{font-size:17px;line-height:2.2;min-height:120px;white-space:pre-wrap}
+.story-text .cursor{color:var(--face);animation:blink 1s infinite}
+/* 「跳过」逐字展示：位于正文右上侧，不超出正文栏 */
+.skip-row{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin:-4px 0 8px}
+.skip-btn{padding:1px 12px;font-family:inherit;font-size:12px;letter-spacing:2px;line-height:1.8;
+  color:#8feaff;background:linear-gradient(90deg,rgba(38,178,255,.18),rgba(38,178,255,.06));
+  border:1px solid rgba(95,220,255,.85);border-radius:3px;
+  cursor:pointer;transition:all .22s;
+  box-shadow:0 0 12px rgba(64,196,255,.3),inset 0 0 10px rgba(64,196,255,.1);
+  text-shadow:0 0 6px rgba(95,220,255,.6),0 0 14px rgba(64,196,255,.4)}
+.skip-btn:hover{color:#d4f7ff;border-color:#8fe9ff;
+  background:linear-gradient(90deg,rgba(38,178,255,.32),rgba(38,178,255,.12));
+  box-shadow:0 0 22px rgba(64,196,255,.55),inset 0 0 14px rgba(64,196,255,.16)}
+.skip-btn.is-done{opacity:.5;cursor:default;
+  box-shadow:0 0 10px rgba(64,196,255,.16);text-shadow:0 0 5px rgba(95,220,255,.3)}
+/* 「返回上一章」：跟在选项下方，荧光蓝描边 */
+.story-back-row{margin-top:18px;display:flex;align-items:center;gap:10px}
+.story-back{display:inline-flex;align-items:center;gap:7px;padding:8px 22px 8px 14px;
+  font-family:inherit;font-size:14px;letter-spacing:3px;line-height:1.8;
+  color:#8feaff;background:linear-gradient(90deg,rgba(38,178,255,.2),rgba(38,178,255,.07));
+  border:1px solid rgba(95,220,255,.85);border-radius:4px;cursor:pointer;
+  box-shadow:0 0 20px rgba(64,196,255,.4),inset 0 0 14px rgba(64,196,255,.14);
+  text-shadow:0 0 6px rgba(95,220,255,.75),0 0 16px rgba(64,196,255,.5);transition:all .22s}
+.story-back:hover{color:#d4f7ff;border-color:#8fe9ff;
+  background:linear-gradient(90deg,rgba(38,178,255,.34),rgba(38,178,255,.14));
+  box-shadow:0 0 26px rgba(64,196,255,.62),inset 0 0 18px rgba(64,196,255,.2)}
+.story-back svg{width:13px;height:13px;flex:none}
+.story-back[disabled]{opacity:.42;cursor:default;color:#5f7d8c;
+  border-color:rgba(95,125,140,.45);background:rgba(20,30,38,.42);
+  box-shadow:none;text-shadow:none}
+.story-back[disabled]:hover{color:#5f7d8c;border-color:rgba(95,125,140,.45);
+  background:rgba(20,30,38,.42)}
+@media(max-width:720px){ .story-back{font-size:12px;padding:6px 14px 6px 10px} }
+@keyframes blink{50%{opacity:0}}
+.choices{margin-top:36px;display:flex;flex-direction:column;gap:10px}
+.choice-btn{
+  text-align:left;padding:14px 18px;background:var(--panel-2);
+  border:1px solid var(--line);color:var(--text);cursor:pointer;
+  font-family:inherit;font-size:15px;transition:all .2s;
+}
+.choice-btn:hover{border-color:var(--face);padding-left:24px}
+.choice-btn .hint{display:block;font-size:12px;color:var(--text-dim);margin-top:4px}
+.ending{margin-top:30px;padding:18px;border:1px dashed var(--gold);color:var(--gold);
+  font-family:"Noto Serif SC",serif;letter-spacing:2px}
+
+/* ===== 角色立绘（故事页右下角，底部贴合，不遮文字） ===== */
+.portrait{
+  position:fixed;right:0;bottom:0;z-index:-1;height:min(330px,44vh);
+  pointer-events:none;opacity:.95;
+  mask-image:linear-gradient(to top,#000 78%,transparent);
+  -webkit-mask-image:linear-gradient(to top,#000 78%,transparent);
+  filter:drop-shadow(-12px 0 28px rgba(0,0,0,.55));
+}
+.portrait-text{padding-right:200px}
+@media(max-width:720px){
+  .portrait{height:210px;opacity:.7;mask-image:linear-gradient(to top,#000 70%,transparent);-webkit-mask-image:linear-gradient(to top,#000 70%,transparent)}
+  .portrait-text{padding-right:120px}
+}
+
+/* ===== 资料库 ===== */
+.archive-card{background:var(--panel);border:1px solid var(--line);padding:18px;margin-bottom:14px}
+.archive-card .row{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px}
+.archive-card .name{font-family:"Noto Serif SC",serif;font-size:19px}
+.archive-card.face .name{color:var(--face)}
+.archive-card.breaker .name{color:var(--breaker)}
+.archive-card .role-tag{font-size:12px;color:var(--text-dim);letter-spacing:1px}
+.archive-card .desc{font-size:14px;color:var(--text);margin:10px 0 8px}
+.archive-card .rels{font-size:13px;color:var(--text-dim)}
+.archive-card .rels b{color:var(--text);font-weight:500}
+.note{background:var(--panel-2);border-left:3px solid var(--gold);padding:14px 16px;
+  font-size:13px;color:var(--text-dim);margin:20px 0;line-height:1.8}
+
+/* ===== 说明面板 ===== */
+details{background:var(--panel);border:1px solid var(--line);padding:16px;margin:20px 0}
+details summary{cursor:pointer;font-family:"Noto Serif SC",serif;color:var(--gold);letter-spacing:2px}
+details p,details li{font-size:14px;color:var(--text-dim);margin:8px 0}
+details code{background:#0a0f14;padding:2px 6px;color:var(--face);font-size:13px}
+
+@media (max-width:560px){
+  #app{padding:24px 14px 60px}
+  .home{padding-top:6vh}
+}
+
+/* ============================================================
+   知识图谱页（内嵌完整版静态图谱）
+   ============================================================ */
+/* 打开完整版：固定在左下角，避开右上角的音乐控件 */
+.kg-open{position:fixed;left:22px;bottom:16px;z-index:60;display:inline-flex;align-items:center;
+  padding:7px 15px;border:1px solid var(--line);border-radius:8px;cursor:pointer;
+  font-size:12.5px;letter-spacing:1px;color:var(--text-dim);
+  background:var(--panel);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.kg-open:hover{border-color:var(--face);color:var(--face)}
+
+/* —— 完整版内嵌 —— */
+.kg-frame-wrap{position:relative;height:min(78vh,760px);min-height:480px;
+  border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#070b16}
+#kg-frame{width:100%;height:100%;border:0;display:block}
+.kg-loading{display:flex;align-items:center;justify-content:center;
+  height:100%;color:var(--text-dim);font-size:14px;letter-spacing:1px}
+
+/* —— 图谱页：突破正文限宽，铺满屏幕 —— */
+body.kg-mode #app{max-width:none;padding:14px 20px 18px}
+body.kg-mode .story-head{position:relative;justify-content:flex-start;padding-right:56px}
+body.kg-mode .kg-back{position:absolute;left:50%;top:0;transform:translateX(-50%);white-space:nowrap}
+body.kg-mode .kg-frame-wrap{height:calc(100vh - 142px);min-height:560px}
+/* ===== 背景音乐控件（全局右上角） ===== */
+.bgm-control{position:fixed;top:14px;right:16px;z-index:99;display:flex;align-items:center;gap:8px}
+.bgm-btn{
+  width:38px;height:38px;border-radius:50%;cursor:pointer;flex:none;
+  background:var(--panel);border:1px solid var(--line);color:var(--face);
+  display:flex;align-items:center;justify-content:center;transition:all .2s;backdrop-filter:blur(8px);
+}
+.bgm-btn:hover{border-color:var(--face);box-shadow:0 0 14px rgba(143,196,212,.3)}
+.bgm-btn svg{width:20px;height:20px}
+.bgm-panel{
+  display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
+  padding:8px 12px;border-radius:20px;backdrop-filter:blur(8px);
+  opacity:0;transform:translateX(8px);pointer-events:none;transition:all .2s;
+}
+.bgm-control:hover .bgm-panel,.bgm-panel:focus-within{opacity:1;transform:translateX(0);pointer-events:auto}
+.bgm-vol-label{font-size:12px;color:var(--text-dim)}
+#bgm-vol{width:110px;accent-color:var(--face);cursor:pointer}
+
+/* ===== 存档：首页「存档」交互键 + 悬浮存档面板 ===== */
+.save-dock{display:flex;justify-content:center;margin:2px 0 0}
+.save-tab{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:3px 15px;font-family:inherit;font-size:12px;letter-spacing:3px;line-height:1.9;
+  color:#8feaff;background:linear-gradient(90deg,rgba(38,178,255,.18),rgba(38,178,255,.06));
+  border:1px solid rgba(95,220,255,.82);
+  border-radius:3px;cursor:pointer;transition:all .22s;
+  box-shadow:0 0 14px rgba(64,196,255,.32),inset 0 0 10px rgba(64,196,255,.1);
+  text-shadow:0 0 6px rgba(95,220,255,.6),0 0 14px rgba(64,196,255,.4);
+}
+.save-tab:hover,.save-tab.is-open{color:#d4f7ff;border-color:#8fe9ff;
+  background:linear-gradient(90deg,rgba(38,178,255,.32),rgba(38,178,255,.12));
+  box-shadow:0 0 24px rgba(64,196,255,.58),inset 0 0 14px rgba(64,196,255,.16)}
+.save-tab svg{width:14px;height:14px;opacity:.9;flex:none}
+.save-tab .save-n{letter-spacing:0;font-size:11px;color:#d6f4ff;opacity:.85;text-shadow:0 0 8px rgba(95,220,255,.5)}
+/* 面板挂在一个固定在视口上的透明层里：不会把首页撑长，也不会被正文限宽裁掉 */
+.save-stage{position:fixed;left:0;top:0;right:0;bottom:0;z-index:150;pointer-events:none}
+.save-stage[hidden]{display:none}
+.save-panel{
+  position:absolute;width:min(436px,calc(100vw - 24px));
+  pointer-events:auto;
+  padding:13px 16px 10px;border-radius:12px;
+  background:rgba(10,15,21,.95);border:1px solid rgba(143,196,212,.34);
+  box-shadow:0 18px 50px rgba(0,0,0,.62),0 0 26px rgba(143,196,212,.10);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  transform-origin:50% 100%;overflow:hidden;
+}
+/* —— 展开 / 收束特效 —— */
+.save-panel.is-opening{animation:savePanelIn .38s cubic-bezier(.16,.86,.3,1) both}
+.save-panel.is-closing{animation:savePanelOut .22s ease-in forwards}
+@keyframes savePanelIn{
+  0%{opacity:0;transform:translateY(10px) scale(.955);filter:blur(4px);
+     box-shadow:0 0 0 rgba(0,0,0,0),0 0 0 rgba(127,230,255,0)}
+  45%{opacity:.94;filter:blur(0);box-shadow:0 18px 50px rgba(0,0,0,.5),0 0 30px rgba(127,230,255,.5)}
+  100%{opacity:1;transform:none;filter:blur(0);
+     box-shadow:0 18px 50px rgba(0,0,0,.62),0 0 26px rgba(143,196,212,.10)}
+}
+@keyframes savePanelOut{
+  0%{opacity:1;transform:none;filter:blur(0)}
+  100%{opacity:0;transform:translateY(8px) scale(.965);filter:blur(4px)}
+}
+/* 扫描光带：开面板时自上而下扫一道青光 */
+.save-panel::before{
+  content:"";position:absolute;left:0;right:0;top:0;height:1px;pointer-events:none;
+  background:linear-gradient(90deg,transparent 6%,rgba(127,230,255,.95) 50%,transparent 94%);
+  box-shadow:0 0 14px rgba(127,230,255,.75);opacity:0
+}
+.save-panel.is-opening::before{animation:saveScan .55s cubic-bezier(.4,0,.2,1) both}
+@keyframes saveScan{
+  0%{top:0;opacity:0}
+  12%{opacity:.95}
+  82%{opacity:.75}
+  100%{top:100%;opacity:0}
+}
+/* 四角描线：展开时从四角往里亮一下 */
+.save-panel::after{
+  content:"";position:absolute;inset:0;border-radius:12px;pointer-events:none;opacity:0;
+  background:
+    linear-gradient(#7fe6ff,#7fe6ff) left top/18px 1px no-repeat,
+    linear-gradient(#7fe6ff,#7fe6ff) left top/1px 18px no-repeat,
+    linear-gradient(#7fe6ff,#7fe6ff) right top/18px 1px no-repeat,
+    linear-gradient(#7fe6ff,#7fe6ff) right top/1px 18px no-repeat,
+    linear-gradient(#7fe6ff,#7fe6ff) left bottom/18px 1px no-repeat,
+    linear-gradient(#7fe6ff,#7fe6ff) left bottom/1px 18px no-repeat,
+    linear-gradient(#7fe6ff,#7fe6ff) right bottom/18px 1px no-repeat,
+    linear-gradient(#7fe6ff,#7fe6ff) right bottom/1px 18px no-repeat;
+}
+.save-panel.is-opening::after{animation:saveCorners .5s ease-out both}
+@keyframes saveCorners{
+  0%{opacity:0;transform:scale(1.06)}
+  30%{opacity:1}
+  100%{opacity:0;transform:scale(1)}
+}
+/* 行逐条浮现 */
+.save-panel.is-opening .save-head{animation:saveRowIn .3s .06s both}
+.save-panel.is-opening .save-row{animation:saveRowIn .32s both}
+@keyframes saveRowIn{
+  0%{opacity:0;transform:translateY(7px)}
+  100%{opacity:1;transform:none}
+}
+.save-head{display:flex;align-items:baseline;gap:10px;padding-bottom:8px;
+  border-bottom:1px solid rgba(255,255,255,.09)}
+.save-title{flex:1;min-width:0;font-family:"Noto Serif SC",serif;font-size:14px;letter-spacing:3px;color:#cdeef9}
+.save-x{flex:none;width:22px;height:22px;line-height:20px;text-align:center;font-size:14px;
+  font-family:inherit;color:var(--text-dim);background:transparent;border:none;cursor:pointer}
+.save-x:hover{color:#e0927f}
+.save-row{display:flex;align-items:center;gap:10px;padding:9px 0;
+  border-bottom:1px solid rgba(255,255,255,.055)}
+.save-row:last-of-type{border-bottom:none}
+.save-tag{flex:none;width:50px;text-align:center;font-size:10px;letter-spacing:1px;line-height:1.7;
+  padding:1px 0;border-radius:3px;border:1px solid rgba(255,255,255,.14);color:var(--text-dim)}
+.save-tag.auto{color:#8fc4d4;border-color:rgba(143,196,212,.45);background:rgba(143,196,212,.10)}
+.save-tag.manual{color:#c9b98a;border-color:rgba(201,185,138,.4);background:rgba(201,185,138,.08)}
+.save-info{flex:1;min-width:0}
+.save-role{display:block;font-size:12.5px;letter-spacing:1px;color:var(--text);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.save-role em{margin-left:7px;font-style:normal;font-size:11px;letter-spacing:0;color:#8a97a1}
+.save-meta{display:block;font-size:11px;color:var(--text-dim);margin-top:2px;letter-spacing:.3px}
+.save-meta .mode{color:#8fc4d4}
+.save-meta .mode.manual{color:#c9b98a}
+.save-act{flex:none;display:flex;gap:5px}
+.sbtn{padding:2px 8px;font-family:inherit;font-size:11px;letter-spacing:1px;line-height:1.75;
+  background:transparent;border:1px solid rgba(255,255,255,.16);border-radius:3px;
+  color:var(--text-dim);cursor:pointer;transition:all .18s;white-space:nowrap}
+.sbtn:hover{color:var(--text);border-color:rgba(255,255,255,.34)}
+.sbtn.load{color:#5f9bd8;border-color:rgba(90,140,210,.55);background:rgba(90,142,214,.12)}
+.sbtn.load:hover{color:#8ec2ef;border-color:rgba(120,175,230,.8);background:rgba(90,142,214,.22)}
+.sbtn.save{color:#c9b98a;border-color:rgba(201,185,138,.45);background:rgba(201,185,138,.08)}
+.sbtn.save:hover{color:#e2d4a4;border-color:rgba(201,185,138,.8);background:rgba(201,185,138,.16)}
+.sbtn.del{color:#b57a6d;border-color:rgba(196,106,90,.4)}
+.sbtn.del:hover{color:#e0927f;border-color:rgba(196,106,90,.8);background:rgba(196,106,90,.14)}
+.sbtn[data-wait="1"]{color:#e6a996;border-color:rgba(196,106,90,.9);background:rgba(196,106,90,.16)}
+.save-empty{display:block;font-size:12.5px;color:#6f7d87;letter-spacing:1px}
+.save-msg{min-height:15px;margin-top:7px;font-size:11px;letter-spacing:.5px;color:#84d3a0;opacity:0;transition:opacity .25s}
+.save-msg.show{opacity:1}
+@media(max-width:560px){
+  .save-act{flex-wrap:wrap;justify-content:flex-end;max-width:110px}
+  .save-tag{width:44px}
+}
+
+</style>
+</head>
+<body>
+<main id="app"></main>
+
+<!-- 背景音乐：全局控件（右上角） -->
+<audio id="bgm" src="assets/bgm.mp3" loop preload="auto"></audio>
+<div id="bgm-control" class="bgm-control">
+  <div id="bgm-panel" class="bgm-panel">
+    <span class="bgm-vol-label">音量</span>
+    <input type="range" id="bgm-vol" min="0" max="100" value="60" aria-label="音量">
+  </div>
+  <button id="bgm-toggle" class="bgm-btn" title="点击静音 / 开启" aria-label="背景音乐开关"></button>
+</div>
+
+<!-- 存档面板（固定在视口层，首页悬停「存档」键、剧情页点「存档」键时展开） -->
+<div class="save-stage" id="saveStage" hidden>
+  <div class="save-panel" id="savePanel"
+       onmouseenter="cancelSaveClose()" onmouseleave="scheduleSaveClose()"></div>
+</div>
+
+<!-- 知识图谱：图表库 + 数据（本地文件，断网也能用） -->
+
+
+<script>
+/* ============================================================
+   ★★★ 第一部分：剧情数据 —— 你要填的文字主要都在这里 ★★★
+   规则：
+   1. 每一个剧情场景是 STORY 里的一个条目，名字（如 luoji_1）自己起，不能重复。
+   2. text 里写剧情文字；choices 里是玩家能点的选项，to 指向另一个场景的名字。
+   3. 想加结局：做一个 choices 为空 [] 的场景即可。
+   4. 想加新角色线：照抄罗辑的结构，换一组新名字（如 taylor_1、taylor_2）。
+   ============================================================ */
+
+const STORY = {
+
+  /* —— 罗辑线（已可玩）—— */
+  luoji_1: {
+    chapter: "第一章 · 墓前",
+    speaker: "罗辑",
+    text: "杨冬的墓在山坡上，草刚返青。叶文洁站在我旁边，风把她的头发吹乱。她说得很慢：宇宙社会学的两条公理，猜疑链，技术爆炸。说完她就走了，没有解释，也没有回头。\n我在墓碑前坐到天黑。\n那时我以为只是听了一段学术闲谈。直到几个月后，我坐在面壁者联席会议的长桌尽头，忽然想起那几个词，后背一阵发凉。\n她没有理由把这样的话，交给一个不相干的人。\n我成了面壁者，却还不知道自己要面壁做什么。",
+    choices: [
+      { label: "动用面壁者特权，申请一笔天文数字的预算", hint: "给天大的事，套一个没人想细看的名字", to: "luoji_2a" },
+      { label: "什么都不做，先把日子过成一场笑话", hint: "一个废物，是最好用的伪装", to: "luoji_2b" }
+    ]
+  },
+  luoji_2a: {
+    chapter: "第二章 · 极寒材料",
+    speaker: "罗辑",
+    text: "我把文件推出去，标题是“太阳系外围极寒材料测试”。\n有人问这跟防御有什么关系。我说，面壁者的计划不需要解释，这是规则。\n沉默很短，签字很快。一百亿美金，一千枚核弹，分三年运到柯伊伯带外。账单上它们叫探测器。\n散会后我留在走廊里靠墙站了一会儿。刚才那些人看我的眼神，是看一个终于开始干活的人。\n我不打算告诉他们，这些探测器从来不是为了测量什么。",
+    choices: [
+      { label: "把核弹的位置当成坐标来编", hint: "有些数字，只有摆在天上才读得懂", to: "luoji_3a" },
+      { label: "先给自己上一道锁，再谈计划", hint: "锁在别人手里，计划就不属于你", to: "luoji_3b" }
+    ]
+  },
+  luoji_2b: {
+    chapter: "第二章 · 露台",
+    speaker: "罗辑",
+    text: "我向PDC要了阿尔卑斯山脚的一栋房子，一台望远镜，和一个叫庄颜的女孩。\n媒体把我骂成人类历史上最贵的废物。我在雪线以上喝威士忌，看她在画布上涂星星。\n夜里她睡了，我独自把叶文洁那几句话写在纸上，一遍遍推演：两个彼此不知道对方善意的文明，相遇时会发生什么。\n答案越来越清楚，也越来越冷。\n她有一次问我，你在想什么。我说，在想有没有人愿意先开口。",
+    choices: [
+      { label: "让“探测器”去做一件比防御更狠的事", hint: "最像武器的东西，未必用来看家", to: "luoji_3a" },
+      { label: "先把自己变成计划里最不可靠的一环", hint: "一个人的心跳，也可以是引爆器", to: "luoji_3b" }
+    ]
+  },
+  luoji_3a: {
+    chapter: "第三章 · 门牌号",
+    speaker: "罗辑",
+    text: "我从天文台要了一颗恒星的全部数据：187J3X1，距三体星系四光年出头，周围空得干净。\n我把它的坐标拆成时间序列，编进核弹的起爆程序。它们若同时亮起，太阳系外就会出现一串不属于任何自然现象的闪光——那是一个地址，写在宇宙的墙上。\n“只是测试。”我对工程师说。\n他点头，把参数抄进本子。\n我给庄颜买了条项链，坠子是一小片星空。她很高兴。\n我没告诉她，这片星空很快会被点亮一次。",
+    choices: [
+      { label: "继续把布设推到最后，不让任何人过问深层数据", hint: "外壳可以给人看，心脏不行", to: "luoji_4a" },
+      { label: "让理论组再复核一遍黑暗森林的推演", hint: "赌局可以骗人，物理不能", to: "luoji_4b" }
+    ]
+  },
+  luoji_3b: {
+    chapter: "第三章 · 心跳",
+    speaker: "罗辑",
+    text: "我把心脏起搏器的信号线接到雪地工程主控端。工程师确认了三遍：我的心跳一停，一千枚核弹同时起爆。\n“这是保险。”我说。\n他没敢问保险的是谁。\n那晚我在露台上抱着庄颜看星星，她指着一颗亮星问，上面会不会有人。\n我说会。她问，那他们看得见我们吗。\n我摸了摸胸口那个凸起。\n“看得见，”我说，“但我们最好别让他们看见。”\n她没听懂，把头靠回我肩上。",
+    choices: [
+      { label: "让核弹阵形构成一串可以被“读”出来的坐标", hint: "刀既要握着，也要让对面看见", to: "luoji_4a" },
+      { label: "先去白板上把那条法则写完", hint: "说不清的事，永远做不干净", to: "luoji_4b" }
+    ]
+  },
+  luoji_4a: {
+    chapter: "第四章 · 网",
+    speaker: "罗辑",
+    text: "三年后，一千枚核弹在柯伊伯带外排成一张网。\n我把它们的位置连成线，那条线在屏幕上组成了一个坐标。\n那一刻我明白自己在做什么：我不是在造武器，我是在给宇宙递一张纸条，上面写着另一个文明的门牌号。\n黑暗森林里，谁先暴露，谁先死。\n问题不在人类是否相信这条法则。\n问题在于，三体人是否相信，我真的会写下那张纸条。",
+    choices: [
+      { label: "请几位物理学家下来，看最后一页", hint: "有些事，一个人扛不住，也不该扛", to: "luoji_5a" },
+      { label: "谁都不说，继续被人当成废物", hint: "骂名也是一层壳", to: "luoji_5b" }
+    ]
+  },
+  luoji_4b: {
+    chapter: "第四章 · 三行字",
+    speaker: "罗辑",
+    text: "PDC第七次质询我。我把一份“外围材料测试进度报告”推过去，全是数据，全是真的，全是无用的。\n散会后我回到住处，锁上门，在白板上写下三行：\n宇宙是一座黑暗森林。每个文明都是带枪的猎人。谁暴露，谁死。\n写完我退后两步看了看，又擦掉。\n擦的时候手很稳。\n我知道这几行字一旦留下来，我这个人就再也不能只是一个摆烂的面壁者了。",
+    choices: [
+      { label: "把这几行字讲给懂物理的人听", hint: "让最聪明的人先替你害怕", to: "luoji_5a" },
+      { label: "把字擦干净，回去继续喝酒", hint: "沉默的人，才按得下那个键", to: "luoji_5b" }
+    ]
+  },
+  luoji_5a: {
+    chapter: "第五章 · 判决书",
+    speaker: "罗辑",
+    text: "我把几位物理学家请到地下室，把最后一页推演投在墙上。\n没有人说话。有人手指在桌面上抖。\n“如果这是真的，”最年长的那位说，“你手里握的不是武器，是判决书。”\n“对。”\n“那您打算怎么办。”\n我看着屏幕上那个坐标，很久没有回答。\n我受过的所有教育都在告诉我：人类不该以这种方式活下去。\n而我手里，只剩下这一种方式。",
+    choices: [
+      { label: "继续走，把他们也算进计划里", hint: "知道的人多一点，路就窄一点", to: "luoji_6a" },
+      { label: "从此不再见任何人", hint: "最危险的一步，只能一个人走", to: "luoji_6b" }
+    ]
+  },
+  luoji_5b: {
+    chapter: "第五章 · 骂名",
+    speaker: "罗辑",
+    text: "我继续摆烂。白天陪庄颜去镇上买颜料，晚上开无意义的远程会议，说含混的话。\nPDC的耐心在耗尽，有人提议剥夺我的特权。我听着，点头，偶尔笑一下。\n只有我自己知道，我每天睡前都要去看一眼雪地工程的状态灯，像确认一个人还在呼吸。\n有人问我为什么不行动。\n我说，面壁者的行动不需要被看见。\n记录员停了笔。他要记下来，作为一个蹩脚的借口。",
+    choices: [
+      { label: "让他们把庄颜接走", hint: "有些软肋，早一点断掉更好", to: "luoji_6a" },
+      { label: "搬进控制室，从此只对着屏幕", hint: "人一旦不再见人，就不太像人了", to: "luoji_6b" }
+    ]
+  },
+  luoji_6a: {
+    chapter: "第六章 · 保护性安置",
+    speaker: "罗辑",
+    text: "PDC把庄颜带走了。通知写得很客气：为确保护理，家属接受保护性安置。\n我盯着那张纸看了很久，然后笑了。他们用她逼我交出计划，这没错，他们没做错什么。\n错在我让她走进了我的生活。\n我把引爆终端锁进抽屉，钥匙扔进湖里。\n那天夜里我一个人坐在空房子里，第一次觉得这不是一个计划，是一个人。",
+    choices: [
+      { label: "把这份疼也折算进计划里", hint: "能拿自己下手的人，别人才会信", to: "luoji_7a" },
+      { label: "给史强留一句话，以防万一", hint: "总得有个人知道该去哪里收尸", to: "luoji_7b" }
+    ]
+  },
+  luoji_6b: {
+    chapter: "第六章 · 收起",
+    speaker: "罗辑",
+    text: "我没有去要人。\n我知道他们带走她是为了什么，也知道一旦我去争，雪地工程会被拆成零件一块块检查。\n我在客厅抽了一夜烟，把每条退路都想了一遍，最后只剩一条。\n第二天我回了一份很短的配合函。\n从那天起我不再见任何人，只对着屏幕和坐标。\n有人在报告里写：罗辑终于开始工作了。\n他们不知道，我只是把最后一点人味儿收了起来，藏到计划结束之后。",
+    choices: [
+      { label: "等一颗镜面球体自己找上门", hint: "对手总会先来试探，比你先开口", to: "luoji_7a" },
+      { label: "请史强来一趟，把话说完", hint: "有些话不能带进最后那一分钟", to: "luoji_7b" }
+    ]
+  },
+  luoji_7a: {
+    chapter: "第七章 · 镜面",
+    speaker: "罗辑",
+    text: "智子出现在书房里，一个小小的镜面球体，悬在窗边。\n“你在做什么。”它的声音很平。\n“你们知道我在做什么。”\n沉默。那种沉默比威胁更清楚——它算过我的每一步，只算不出我敢不敢按。\n“你按下它，人类也会死。”\n“那就一起死。”我说，“反正你们走不了。”\n球体停了三秒，消失了。\n窗外，雪线以下的灯一盏盏亮起来。",
+    choices: [
+      { label: "去控制室，把手指放到该放的地方", hint: "话说出口了，就得算数", to: "luoji_8a" },
+      { label: "再等一夜，把最后一遍推演做完", hint: "多一夜的把握，少一夜的胆气", to: "luoji_8b" }
+    ]
+  },
+  luoji_7b: {
+    chapter: "第七章 · 一箱酒",
+    speaker: "罗辑",
+    text: "史强来送一箱酒。他坐下，抽完一支烟，说：你现在这副样子，比真疯还吓人。\n我说，那就当我疯了。\n他把烟摁灭：疯了好，疯子说话没人信，也没人拦。\n临走前他站到门口，回头看了我一眼，说：罗老弟，别一个人扛到最后。\n我说，来不及了。\n门关上。我听着他的脚步在楼道里越来越远。",
+    choices: [
+      { label: "当夜就去控制室，不再回头", hint: "告别已经做完了，剩下的只是动作", to: "luoji_8a" },
+      { label: "天亮再去，先把那份报告写完", hint: "总得给后来的人留一句解释", to: "luoji_8b" }
+    ]
+  },
+  luoji_8a: {
+    chapter: "第八章 · 手指",
+    speaker: "罗辑",
+    text: "终端就在我面前。屏幕上一千个光点，每个都对应一枚等待的核弹。\n只要确认，宇宙里就多出一串地址。\n我不知道多久之后有谁会看见它，也不知道那个“谁”会不会顺手把这个太阳系一起抹掉。\n我只知道三体舰队还在0.1%光速上，而人类也许只有这一次机会让它们停下来。\n我把手放上去。\n指腹下面有一点凉。",
+    choices: [
+      { label: "按下去", hint: "赌局一旦开了，就不该有第二次开价", to: "luoji_end_good" },
+      { label: "松手，等一个更稳妥的时机", hint: "稳妥两个字，常常是犹豫的别名", to: "luoji_end_bad" }
+    ]
+  },
+  luoji_8b: {
+    chapter: "第八章 · 最后一夜",
+    speaker: "罗辑",
+    text: "听证会开到凌晨。他们问了我四十个问题，没有一个问到点子上。\n回到控制室，我给自己倒了最后一杯酒，没有喝。\n屏幕上那条坐标已经编好，随时可以发射。\n我忽然想起杨冬墓前的草，想起庄颜在露台上问“会不会有人”，想起叶文洁说完话就走的背影。\n我记得这一切，所以我知道自己按下去的时候，会疼。\n疼不疼，不该影响我。",
+    choices: [
+      { label: "把酒放下，按下去", hint: "记得越多的人，越该先把该做的事做完", to: "luoji_end_good" },
+      { label: "等天亮，等PDC最后一道授权", hint: "把责任分出去，手会轻一些", to: "luoji_end_bad" }
+    ]
+  },
+  luoji_end_good: {
+    chapter: "结局 · 执剑",
+    speaker: "旁白",
+    text: "信号发出后的第三十一个小时，三体舰队减速了。\n后来的事被写进每一本教科书：罗辑，以暴露坐标相威胁，建立了对三体世界的威慑。\n没有人写那五十四年。他每天坐在终端前，手放在确认键上，不许自己睡沉，不许自己生病，不许自己想起任何人。\n庄颜带孩子来看他，隔着玻璃说话，孩子问他为什么不回家。\n他说，因为我回不去。\n五十四年，是人类从死神手里借来的时间。\n借条在他手上。",
+    choices: []
+  },
+  luoji_end_bad: {
+    chapter: "结局 · 犹豫",
+    speaker: "旁白",
+    text: "他松开了手。\n他想，再等三天，等PDC批准，等一个更稳妥的时机。\n第四天凌晨，ETO的残余力量突破封锁，雪地工程主控室被炸成一片焦黑。\n他赶到时，一千枚核弹只是躺在冰面上的铁。\n三体舰队重新加速，0.1%光速，不快，也不慢，像一个不着急的判决。\n他在废墟里坐到天亮。\n后来有人问他后悔什么。\n他说，我从不缺勇气，我只是太想活着看到结果。",
+    choices: []
+  },
+
+  taylor_1: {
+    chapter: "第一章 · 日内瓦的椅子",
+    speaker: "泰勒",
+    text: "那把椅子在会议厅里放了三十年，磨出了一层深褐色的包浆。\n他们告诉我，现在它属于我了——面壁者一号，全权代表人类执行一个你不需要向任何人解释的计划。\n长桌对面坐着十七个人，十七张脸上有十七种不同的怀疑。\n我没有宣布任何方案。我只说了一句话：“给我舰队，给我时间。”\n他们问我要多少年。\n“足够把活人变成死人。”我说。\n他们听懂了前半句，把后半句当成修辞。我没有纠正。",
+    choices: [
+      { label: "回到华盛顿，开始公开招兵买马", hint: "面壁者需要一支看得见的舰队，哪怕它是烟雾", to: "taylor_2a" },
+      { label: "先飞去木星，亲自看一眼宏原子实验站", hint: "在纸上画图之前，先确认那张纸是存在的", to: "taylor_2b" }
+    ]
+  },
+  taylor_2a: {
+    chapter: "第二章 · 表面的盾",
+    speaker: "泰勒",
+    text: "五角大楼的记者厅里灯光刺眼。\n我站在台上，背后是一张庞大的舰队示意图——球状闪电发生器的位置用红色标出，像一排准备就绪的炮口。\n我说：三体舰队将在四百年后抵达，人类的防御必须建立在宏原子核聚变的基础上。\n我不说的是：这套装置的设计图，最后一页画的不是击穿三体舰体的方案，而是如何让一艘船在零点三秒内从量子态塌缩回——不对，是塌缩进——另一种状态。\n台下有人问，为什么发生器必须装在有人驾驶的舰上。\n我笑了：“因为要有人开它上战场。”\n那天晚上我喝了半瓶威士忌，剩下半瓶浇在地毯上，点了。火焰是蓝白色的。",
+    choices: [
+      { label: "秘密划出第十三分支预算，不写进任何公开文件", hint: "有些账，只能在死人的账本上记", to: "taylor_3a" },
+      { label: "先搞一次媒体公开演习，让所有人亲眼看见蓝白色的光", hint: "恐惧是最好的掩护", to: "taylor_3b" }
+    ]
+  },
+  taylor_2b: {
+    chapter: "第二章 · 木星的冰",
+    speaker: "泰勒",
+    text: "木星轨道外的实验站飘在一片灰蓝色里，没有窗户的墙让它看起来像一口棺材。\n总工程师带我看了宏原子装置的核心——一团被磁场牢牢锁住的能量，安静得像一块冰，又危险得像一只蜷起身体的蛇。\n他说：“泰勒先生，我们可以击穿任何已知的装甲。但代价是……”\n“代价是什么。”\n“目标区域内的所有原子核自旋会被同步锁定。人会变成一团没有辐射的、宏观量子态的东西。”\n他说完就低下了头，好像不敢看我。\n我看了很久那团安静的能量，问了最后一个问题：“锁死之后，它还能动吗。”\n他愣了一下：“理论上……可以。”\n那一瞬间我知道自己的计划没问题——也许有问题，但那是第四步才要解决的问题。",
+    choices: [
+      { label: "立刻下令把实验站改成生产车间", hint: "速度优先，没有时间等完美", to: "taylor_3b" },
+      { label: "让工程师把“量子态行为学”加进预算的第七类", hint: "先搞清楚你买的武器到底能不能自己走路", to: "taylor_3a" }
+    ]
+  },
+  taylor_3a: {
+    chapter: "第三章 · 看不见的钱",
+    speaker: "泰勒",
+    text: "第十三分支预算的文件上，项目名称一栏写的是“太平洋渔业开发”。\n审计官签完字看了我一眼，眼神像在看一个疯子。\n我知道他迟早会查，所以这笔钱分成了十七个账户、二十三家空壳公司，用了五年前一个助理留下的壳——那个助理去年死于心脏病，很干净。\n晚上我在酒店房间里打开了第一份量子态士兵的实验报告：小白鼠在被宏原子能量照射后，仍然保留了迷宫导航的记忆，但失去了对电击的恐惧反应。\n结论是：意识存在，但本能消失。\n我把报告烧了。\n恐惧是服从的前提。没有恐惧的士兵，我怎么指挥他们？\n我喝了一杯冰咖啡，把空杯子扔进了马桶。",
+    choices: [
+      { label: "暂时搁置“量子态行为学”，先造舰队", hint: "走一步看一步，敌人来了之前还有时间", to: "taylor_4a" },
+      { label: "加派三组独立团队同时研究，不惜一切代价", hint: "在开战之前，必须搞清楚他们还能听我说话吗", to: "taylor_4b" }
+    ]
+  },
+  taylor_3b: {
+    chapter: "第三章 · 公众的光",
+    speaker: "泰勒",
+    text: "太平洋上空，球状闪电发生器第一次在公众面前启动。\n蓝白色的光撕开云层，像有人在天上开了一扇门。\n直播镜头捕捉到了所有细节——雷达屏幕上的能量读数、工程师按按钮时的表情、我站在舰桥上的背影。\n评论区瞬间炸了。有人欢呼，有人哭，有人说我是救世主。\n没有人注意到：发生器的功率开到了理论值的一点二倍，远超击穿靶标所需。\n没有人注意到：靶舰上没有活人。\n当天晚上，三体世界的ETO发来了一条加密警告——“主不在乎”。\n我笑了。主不在乎的是你们的防御，不是你们的幽灵。\n我给舰队司令打了个电话：“集结令，一周后，木星轨道。全部主力。不要问为什么。”",
+    choices: [
+      { label: "把演习数据全部销毁，对外只发剪辑好的十分钟视频", hint: "让看见的人只看见你想让他们看见的东西", to: "taylor_4a" },
+      { label: "公开完整数据，争取科学界的支持", hint: "有时候最大的掩护就是让所有人都看过真实的东西", to: "taylor_4b" }
+    ]
+  },
+  taylor_4a: {
+    chapter: "第四章 · 苍白的访客",
+    speaker: "泰勒",
+    text: "他没有预约，直接站在了我五角大楼办公室的门口。\n瘦小，苍白，眼睛下面有两层很深的阴影，像几百年没见过太阳。他穿着一件洗得发白的灰色毛衣，领口磨起了毛。\n“泰勒先生，”他说，“我想玩个游戏。”\n我没有请他进来，但他自己走了进来，在我对面坐下。\n“游戏的名字叫——黑暗森林。”\n他说这句话的时候，手指在桌面上轻轻敲了三下，节奏和三体世界中智子发送的质子闪烁频率一致。\n我后背的衬衫湿了一片。\n“我玩过这个游戏。”我告诉他，语气很平。\n“但你忘了怎么玩。”他笑了，露出两排非常整齐的白牙，“你以为死人可以替活人打仗。但你有没有想过——死人为什么要听活人的话。”\n他说完就站起来走了，没有留下名字。",
+    choices: [
+      { label: "立刻让安保追踪他的身份", hint: "在被揭穿之前，先搞清楚是谁在敲你的门", to: "taylor_5a" },
+      { label: "不管他，加速推进集结令", hint: "说出来的威胁不是威胁，做出来的才是", to: "taylor_5b" }
+    ]
+  },
+  taylor_4b: {
+    chapter: "第四章 · 数据之海",
+    speaker: "泰勒",
+    text: "科学界炸了。\n我公开的演习数据中有一个微小的异常——发生器的输出波形有一段零点几秒的毛刺，那正是量子态锁死的特征。\n一群理论物理学家开始写论文，标题都很吓人：《论球状闪电武器在宏观物体量子化中的潜在应用》。\nPDC的人打电话给我，问我这是不是计划的一部分。\n我回答：“只是实验误差。”\n他们信了。\n但有一个人没信。他在某个论坛发了一帖，标题只有一行字：“面壁者泰勒的真正计划是什么？”\n帖子当天被删，但转发量已经破了百万。\n我让人查发帖者的IP，显示来自一个瑞典的公共图书馆。\n书架上，他留下了一张纸条：“我喜欢玩三体游戏。”",
+    choices: [
+      { label: "停止公开一切，重新转入完全地下", hint: "你已经暴露了牌面，必须立刻改道", to: "taylor_5a" },
+      { label: "不管，按原计划继续", hint: "一张牌打出去就收不回来了，不如继续加码", to: "taylor_5b" }
+    ]
+  },
+  taylor_5a: {
+    chapter: "第五章 · 无名的破壁人",
+    speaker: "泰勒",
+    text: "两天后，我拿到了他的资料——准确地说，是拿不到。\n姓名一栏空着，国籍一栏空着，档案里唯一的一张“照片”是三体游戏的截图：全服排名第五的账号，ID“冯·诺依曼”。\n情报部门翻遍了出入境记录、学籍库、指纹库，找不到这个人。能确认的只有一件事：这个账号长期与ETO成员共用同一批登录节点，疑似与智子有直接通讯通道。\n换句话说，我们只知道他在游戏里叫什么。\n我看着那行字，把咖啡杯摔在了地上。\n安保报告说这个ID三天前最后一次登录，IP落在一片公共网络上，之后彻底沉默。\n我在办公室里走了四个小时，把所有可能泄露的环节逐一排查——实验站、预算、舰队、演习……没有一处有漏洞。\n除非……我自己就是最大的漏洞。\n那天晚上我失眠了。我躺在行军床上（自从当选面壁者后就没再睡过床垫），想了一整夜一个问题：一个连名字都查不到的人，如果真能揭穿我，我该在什么地方、用什么方式，让他永远闭上嘴。",
+    choices: [
+      { label: "派出执行小组，秘密处理冯·诺依曼", hint: "有时候计划最大的敌人不是三体，是一个知道得太多的人类", to: "taylor_6a" },
+      { label: "不处理他，加速舰队集结", hint: "在他喊出来之前，先让幽灵舰队成形——等所有人都看见了，就没人会相信他", to: "taylor_6b" }
+    ]
+  },
+  taylor_5b: {
+    chapter: "第五章 · 木星的灯光",
+    speaker: "泰勒",
+    text: "木星轨道边缘，一千零二十七艘战舰排成了一条静默的长河。\n从旗舰的舰桥望出去，那些灯光安静得像一片从宇宙深处飘过来的星带。\n舰队司令递上了集结完成的报告，他的脸色很差：“泰勒先生，这样大规模的集结太危险了。三体人只要一个质子，就能把我们的坐标发出去。”\n“我知道。”我说。\n“而且，您到底想让这些舰只做什么？防御阵列的设计是分散部署，不是集中在一个点上。”\n我看着窗外那些灯光，没有回答。\n他不需要知道。就像那些灯光不需要知道它们的命运——它们今晚还在发光，明天就会变成别的东西，蓝白色的，没有温度，没有心跳。\n我在心里默念了一遍：一零二七，一零二七，一零二七。这个数字要刻在我的脑子里，刻到我死。",
+    choices: [
+      { label: "加密打击序列，写入舰队主控系统的最底层", hint: "让命令存在，但不让任何人知道它的存在", to: "taylor_6b" },
+      { label: "亲自去每一艘舰上走一圈，跟每一个舰长握手", hint: "最后一眼，最后一次让他们知道自己还活着", to: "taylor_6a" }
+    ]
+  },
+  taylor_6a: {
+    chapter: "第六章 · 握手",
+    speaker: "泰勒",
+    text: "舰队停靠在木星的阴影里，舰与舰之间只有五百米。\n我乘着穿梭机，一艘一艘地走。\n第一艘“林肯号”的舰长是个黑人，三十三岁，有两个孩子。他跟我握手的时候，手掌有点出汗。\n第二艘“曙光号”的舰长是个女人，四十岁，头发白了三分之一。她跟我握手的时候，说了一句：“面壁者先生，我们会赢的。”\n第三艘，第五艘，第十艘……我记不住他们的名字，但我记住了每一只手的温度——有冷的，有暖的，有粗糙的，有光滑的。\n在第五百一十三艘的时候，我停下来了。\n那艘船的舷号是“幽灵”——工程师起的名字，说它的雷达反射信号几乎为零。\n我站在它的舷窗外，看了很久。\n然后我转身对秘书说：“停止走访。回去。”\n我没有告诉她，我害怕再握下去，我的手会留下他们的温度，而那些温度，我留不住。",
+    choices: [
+      { label: "当晚，派出执行小组", hint: "在开战之前，先让破壁人消失", to: "taylor_7a" },
+      { label: "当晚，执行打击序列", hint: "等不下去了。在他喊出来之前，先让舰队变成幽灵", to: "taylor_7b" }
+    ]
+  },
+  taylor_6b: {
+    chapter: "第六章 · 密钥",
+    speaker: "泰勒",
+    text: "打击序列的密钥是我自己编的：一零二七乘以二十三万（对应三体舰队的基本粒子数），再取平方根的倒数。\n我把它印在了一张薄薄的纸上，折成指甲盖大小，塞进了自己的牙龈缝里。\n系统确认了三次。每一次屏幕都跳出同一个警告：“此命令将对目标区域内所有载人舰只造成不可逆量子态锁定。”\n我敲了三次“确定”。\n屏幕变成了蓝白色，然后一片漆黑。\n我摘下头盔，靠在椅背上。\n办公室里很安静，只有空调的声音。桌上摊着那张编密钥的草稿纸，边缘被我指甲掐出了四个洞。\n我拿起打火机，烧了它。\n火焰还是蓝白色的。\n这是我这半年来第一次觉得，蓝白色的火不再像一只蜷起来的蛇。它像一只在等命令的狗。",
+    choices: [
+      { label: "等三天，再确认一次冯·诺依曼的动向", hint: "在按下按钮之前，最后检查一下你身后有没有人", to: "taylor_7a" },
+      { label: "明天早上，直接按下那个按钮", hint: "计划不等人。敌人不等人。幽灵更不等人", to: "taylor_7b" }
+    ]
+  },
+  taylor_7a: {
+    chapter: "第七章 · 破壁人在门口",
+    speaker: "泰勒",
+    text: "三天后，他自己来了。\n执行小组报他失踪了，结果他就站在我五角大楼办公室的门口，和第一次来时一样——灰色毛衣，发白的领口，两排整齐的白牙。\n“泰勒先生，”他说，“我们聊聊。”\n这次他没有自己坐下，而是等我点头。\n我点了。\n他从口袋里掏出一份打印件，推到我面前。那是我两年前烧过的那份小白鼠实验报告——是复制品，从智子那里来的，每一个数据都和我记忆里的一模一样。\n“量子态士兵没有恐惧，”他说，“没有本能，没有服从的理由。你用了一个让士兵失去恐惧的武器，来制造一支需要恐惧才能指挥的军队。这自相矛盾。”\n他每说一句话，手指就在桌面上敲一下。三下之后，他抬起头，眼睛里没有愤怒，只有一种很淡的、像看穿了一切的疲惫。\n“你打算什么时候执行你的计划？”\n我没有回答。\n“我猜，就是今晚。”他笑了，“我在外面等了三天，听见你办公室里三天都没关灯。”",
+    choices: [
+      { label: "承认一切，让他去说", hint: "嘴长在别人脸上，管不住。那就用事实去打他的脸", to: "taylor_8a" },
+      { label: "立刻按下那个按钮", hint: "让幽灵舰队先成形，让他的话永远变成马后炮", to: "taylor_8b" }
+    ]
+  },
+  taylor_7b: {
+    chapter: "第七章 · 蓝白色的海",
+    speaker: "泰勒",
+    text: "凌晨三点，木星轨道。\n我亲自下了那个命令。\n“执行序列：幽灵一号。密钥：[一零二七……]”\n通讯频道先是一片安静，然后响起了一阵极低的嗡鸣——那是一千零二十七台宏原子发生器同时启动的声音。\n第一艘舰消失在蓝白色的光里，像一块糖掉进了水里。\n然后是第二艘，第三艘……它们没有爆炸，没有火光，没有残骸。只是从雷达屏幕上变成了一个发光的、静止的、量子态的点。\n指挥官的声音停在了半句话里：“舰体……量子态……所有舰只……”\n然后通讯频道一片死寂。\n我盯着雷达屏幕上那一千零二十七个蓝白色的点，等了三秒钟。\n然后，我看见了。\n它们动了。\n不是整齐的编队，是零零散散的，像一群刚从墓穴里爬出来的人，摇摇晃晃地，朝着同一个方向——三体舰队的方向——驶去。\n我摘下耳机，手心全是汗。\n成了。也许成了。也许没成。但幽灵舰队已经成形了，再也回不去了。",
+    choices: [
+      { label: "立刻向全世界直播这个画面", hint: "让所有人亲眼看见。看见之后，就没人能再否认", to: "taylor_8a" },
+      { label: "封锁消息，等三天再说", hint: "先确认他们真的能打仗，再说话", to: "taylor_8b" }
+    ]
+  },
+  taylor_8a: {
+    chapter: "第八章 · 幽灵或墙壁",
+    speaker: "泰勒",
+    text: "全世界的屏幕同时亮了。\n一千零二十七艘没有活人、但仍然在动的战舰，蓝白色的点在雷达上连成了一条弯曲的线，朝着太阳系的边缘驶去。\n评论区炸了。这次没有欢呼，只有沉默。然后有人说：“他们在打仗。”有人说：“他们已经死了。”有人说：“泰勒是个疯子。”有人说：“泰勒是人类的救世主。”\n冯·诺依曼也看见了。我知道他会看见，因为他不会错过任何一个屏幕。\n我等了两个小时。\n两个小时里，没有出现那份全面的网络分析。没有任何破壁的声音。\n也许他在看，在重新想。也许他终于意识到——自相矛盾的计划，只要能被执行，就不再是自相矛盾，而是另一套逻辑。\n也许他还会揭穿我。但那又怎样？幽灵舰队已经出发了，它们不会再回来，不会再变成活人。\n我站在五角大楼的天台上，看着远处的天空。\n蓝白色的光，在看不见的地方，正在朝着更远的蓝白色驶去。\n我拿起手机，拨了一个号码。接电话的人是PDC的主任。\n“你们看到了吗。”\n“看到了。”\n“那就让他们打吧。让死人为活人打这一仗。”\n电话那头沉默了很久，最后说了一个字：“好。”",
+    choices: [
+      { label: "结束通话，走下天台", hint: "计划已经完成，剩下的交给幽灵", to: "taylor_end_good" },
+      { label: "把手机扔向空中", hint: "从此以后，我只对自己负责", to: "taylor_end_good" }
+    ]
+  },
+  taylor_8b: {
+    chapter: "第八章 · 墙的阴影",
+    speaker: "泰勒",
+    text: "三天里我没有出门，没有接电话，没有见任何人。\n我只是坐在办公室里，看着雷达屏幕上的蓝白色点。\n第二天晚上，第一个坏消息来了：有二十三艘舰偏离了航线，没有朝着三体舰队去，而是朝着另一个方向——奥尔特云——飘了过去。\n第三天中午，全面分析出来了。\n不是冯·诺依曼写的，是另一个人——一个我从未注意过的、某大学物理系的副教授。他写了一篇长达一百二十页的论文，标题是《论量子态宏观实体的行为不确定性及无意志性》。\n论文里引用了我两年前被冯·诺依曼拿到的那份小白鼠实验数据，精确到小数点后第三位。\n“量子态士兵无法被指挥，”论文最后一段写道，“它们没有忠诚，没有恐惧，没有使命。泰勒的计划，本质上是把一支毫无战斗力的幽灵舰队，用来对抗一支有组织、有目标、有意志的三体舰队。这是自杀。”\n论文当天转发量破了千万。\nPDC的人来了三个，坐在我办公室的沙发上，一言不发。\n我看着他们，什么也没解释。因为无话可解释。\n冯·诺依曼站在走廊里，没有进来，隔着玻璃朝我看了一眼，然后走了。\n他的手指在玻璃上敲了三下。",
+    choices: [
+      { label: "立刻召开记者会，撤回所有计划", hint: "承认失败，至少还能留一条命", to: "taylor_end_bad" },
+      { label: "不撤回，按原计划继续", hint: "既然走到了这一步，就不回头", to: "taylor_end_bad" }
+    ]
+  },
+
+  taylor_end_good: {
+    chapter: "结局 · 幽灵舰队",
+    speaker: "泰勒",
+    text: "幽灵舰队在奥尔特云边缘停了一会儿，然后再次编队，朝着三体舰队的方向驶去。\n它们没有声音，没有雷达信号，只有一片被锁死的电子自旋，安静地亮在一片空旷里。\n我在五角大楼的地下室看了一整天的实时画面——画面只有雷达上的蓝白色点，没有任何真实的视觉。\n没有人知道那艘偏离航线的二十三艘去了哪里。有人说它们迷失了方向，有人说它们已经被三体舰队击毁，有人说它们成了真正的幽灵，在宇宙里永远地飘下去。\n但剩下的九百九十四艘，它们一直在往前。\n没有整齐的编队，没有精确的协同，只有一种最原始的、也许是只有死者才能保留的本能——朝着光的方向走。\n我想起冯·诺依曼的话：它们没有忠诚。\n是的。但那又怎样？\n在那片没有时间没有温度的虚空里，忠诚需要有对象，而它们已经没有对象了。\n它们不需要信仰，不需要使命，不需要活人的命令。\n它们只需要方向。而方向，我给了。\n很久以后，当有人问我是否相信自己的计划时，我只说了一句话：\n“我不相信。但我相信，当没有别的办法时，幽灵比活人更值得信任。”\n窗外的太阳照常升起。",
+    choices: []
+  },
+
+  taylor_end_bad: {
+    chapter: "结局 · 破壁之后",
+    speaker: "旁白",
+    text: "第二天清晨，网上出现了一份分析。\n它比冯·诺依曼说得更完整，也更残忍：量子态士兵无法被指挥，无法被信任，无法被赋予使命；一支没有恐惧的军队，同时失去了服从的理由。计划从第一行字起就是矛盾的。\n人们不再讨论球状闪电，不再讨论宏原子核聚变。他们只讨论他——一个想让死人替活人去死的骗子。\nPDC 的传唤在上午十点。\n他回到办公室，锁上门，从抽屉最里面取出那把枪。\n窗外太阳照常升起。\n他想起很多年前在五角大楼说过的话：我们不缺武器，缺的是把武器用得起的理由。\n枪声很轻。\n像有人在很远的地方，合上了一本书。",
+    choices: []
+  },
+
+  /* —— 雷迪亚兹线（已可玩）—— */
+  reidiaz_1: {
+    chapter: "第一章 · 面壁者",
+    speaker: "雷迪亚兹",
+    text: "会场里没有人鼓掌。\n我把那颗小球放在桌上。它是水星的模型，表面坑洼，像一张被打过很多次的脸。\n“恒星级氢弹，”我说，“以及一座建在水星背阳面的最后堡垒。人类将在那里打完最后一仗。”\n翻译把这句话译成六种语言，六种语言里我只听见一种情绪：安心。\n他们需要一个愿意挖洞的人。\n我确实在挖洞，只是他们不知道，我挖的不是藏身之处。\n散会时，一位代表问我，总统先生，为什么偏偏是水星。\n我说，因为它离太阳最近。\n这是实话，也是我唯一被允许说出的那部分实话。",
+    choices: [
+      { label: "立刻飞往水星，亲眼看着第一台钻机下井", hint: "图纸上的墙，不如脚底下的岩层可靠", to: "reidiaz_2a" },
+      { label: "先回加拉加斯，把国库的钥匙握回手里", hint: "墙要砌在别人的疑虑之上", to: "reidiaz_2b" }
+    ]
+  },
+  reidiaz_2a: {
+    chapter: "第二章 · 背阳面",
+    speaker: "雷迪亚兹",
+    text: "水星背阳面，零下一百八十度。探照灯把岩壁照成惨白，钻机的声音传不出真空，只有脚底传来细微的震动。\n工程师报告，第一层地壳已经打通，可以开始布设。\n“继续往下。”\n他迟疑了一下：再往下，堡垒的防护结构就没有意义了。\n我没有解释。我看着他身后的巷道，那里堆着刚运到的弹体，银灰色，一枚挨着一枚，像某种还没发芽的种子。\n他小声问，这些东西到底是用来炸谁的。\n我拍了拍他的肩。这个问题，等它响的时候，所有人都会知道答案。",
+    choices: [
+      { label: "把理论组调到水星，当面演算那条弧线", hint: "有些话，只能在太阳照不到的地方说", to: "reidiaz_3a" },
+      { label: "下令追加弹体，数目提到七位数", hint: "多一颗，太阳就多欠你一句话", to: "reidiaz_3b" }
+    ]
+  },
+  reidiaz_2b: {
+    chapter: "第二章 · 石油与钢铁",
+    speaker: "雷迪亚兹",
+    text: "加拉加斯的雨下了一整夜。内阁在等我做决定：把今年的石油收入修学校，还是运去一颗没人住的星球。\n我选了后者。没有人敢反对，只有一个部长把手按在桌上，指节发白。\n“人民的忍耐是有限的。”\n“三体舰队不会忍耐。”我说，“它们只会到达。”\n散会后我留下他，给他看了一张运输排期表：钻机、船坞、封存的发射井，一行行排到十几年后。\n他问我要建什么。\n“一座足够大的坟墓。”我说，“大到能把所有人一起装进去。”\n他退出去时没有关门。走廊的灯照进来，很长，像一条引信。",
+    choices: [
+      { label: "召见理论首席，让他当面重算水星的坠落路径", hint: "同归于尽也要算清楚，账不能糊", to: "reidiaz_3a" },
+      { label: "把钻探队扩充三倍，工期砍掉一半", hint: "时间比预算更不经花", to: "reidiaz_3b" }
+    ]
+  },
+  reidiaz_3a: {
+    chapter: "第三章 · 弧线",
+    speaker: "雷迪亚兹",
+    text: "屏幕上的弧线很安静：一条从水星出发、擦过太阳、扫过四颗行星的曲线。\n首席科学家说，只要能量足够，水星会失速坠落，撕开日冕，连锁改变其余行星的轨道。地球也在其中。\n“需要多少？”\n他报了一个数字，然后补上一句：以人类现在的工业能力，做不到。\n“那就做到。”\n他终于抬起头看我。那不是对三体人的恐惧。\n“总统先生，这不是武器，这是把整个人类当人质。”\n“对。”我说，“人质也是谈判的一方。”\n他沉默了很久，最后问，报告该怎么写。\n我说，写“堡垒”。",
+    choices: [
+      { label: "把资料封进最高密级，然后回到水星", hint: "知道这条弧线的人越少，它就越直", to: "reidiaz_4a" },
+      { label: "让他同时着手摇篮系统的设计", hint: "谈判要有筹码，也要有一条退不掉的路", to: "reidiaz_4b" }
+    ]
+  },
+  reidiaz_3b: {
+    chapter: "第三章 · 百万",
+    speaker: "雷迪亚兹",
+    text: "第一百零七万枚弹体下线那天，没有仪式。\n我站在装配大厅的观察窗后，看它们排成无数条平行的线，被机械臂送进运输舱。每一枚的当量，都够抹平一座城市。\n这个数目，不该用来炸一支舰队，也不该用来炸一颗行星。\n它只适合做一件事：让一颗行星改变主意。\n工程部长站在我旁边，声音很低：总统先生，我们到底在建什么。\n“堡垒。”\n“堡垒不需要这么多。”\n我转过头看他。他立刻低下头，把后半句咽了回去。\n那天下午，我让人在他办公室的门上，加了一道锁。",
+    choices: [
+      { label: "把摇篮系统的手环，第一次戴到自己手腕上", hint: "先让自己死不了，计划才死不了", to: "reidiaz_4b" },
+      { label: "启程回国，去面对那些等着答案的人", hint: "有些账躲不掉，只能当面结", to: "reidiaz_4c" }
+    ]
+  },
+  reidiaz_4a: {
+    chapter: "第四章 · 破壁",
+    speaker: "雷迪亚兹",
+    text: "他走进会议室时，我以为是哪个部门新派来的联络官。中年，身材挺拔，脸好看得不像做这行的人。他没有说自己是谁，也没有出示证件，只在桌边坐下，把一叠纸推过来。\n“总统先生，我算过了。”\n纸上列着弹体数量、地层承压、能量总和，最后是一个结论——不足以让水星失速坠落，差得很远。\n“您的计划，从物理上就不成立。”\n窗外的太阳正照在水星表面。\n“但您成功了，”他轻声说，“人类怕的不是计算，是决心。”\n我看着他，忽然明白他不是来阻止我的。他是来告诉我，我已经结束了。",
+    choices: [
+      { label: "不回应他，转身走向控制台，启动倒计时", hint: "既然算不出来，就让他们亲眼看见", to: "reidiaz_end_good" },
+      { label: "把文件收进抽屉，对外宣称一切如常", hint: "破壁人只有一个，可舆论有几十亿个", to: "reidiaz_end_bad" }
+    ]
+  },
+  reidiaz_4b: {
+    chapter: "第四章 · 摇篮",
+    speaker: "雷迪亚兹",
+    text: "PDC 的传票在凌晨送到。他们要我把全部工程数据交出来，解除面壁者身份。\n会议室里坐着十二个人，没有一个人看我的眼睛。\n“这是投票结果。”主席说。\n我抬起左手，让他们看见手腕上的金属环。\n“这是摇篮系统。”我说，“我的心跳一停，水星地壳里那一百零七万枚弹体就会同时醒来。你们可以拿走我的权力，但拿不走我的心跳。”\n房间里安静得能听见空调的声音。\n有人低声说，这是疯了。\n我站起来，走到门口，回头看了一眼那十二张脸。\n“不。”我说，“这是我唯一还剩下的谈判方式。”",
+    choices: [
+      { label: "回到控制室，把倒计时拨到最后一小时", hint: "筹码要举起来，别人才看得见", to: "reidiaz_end_good" },
+      { label: "摘下金属环放在桌上，然后回国", hint: "把命还给他们，看他们敢不敢要", to: "reidiaz_end_bad" }
+    ]
+  },
+  reidiaz_4c: {
+    chapter: "第四章 · 石子",
+    speaker: "雷迪亚兹",
+    text: "飞机降落在加拉加斯时，机场外已经站满了人。\n我从舷窗往下看，那些举起的牌子密密麻麻，像一片收割前的麦田。\n随行的人劝我从侧门走。我说不必。\n“他们有权知道自己在恨什么。”\n走出舱门的那一刻，热风扑面。人群的声音像潮水一样涌过来，可我听不清任何一个词。\n我抬起左手，手腕上的金属环在阳光下反了一下光。\n没有人知道那个环是什么。\n他们只知道，这个人在一颗石头上埋了足够多的东西，多到可以拿来威胁太阳。\n而太阳，此刻正照在他们每个人的脸上。",
+    choices: [
+      { label: "举起手腕，按下那个按钮", hint: "让他们看看，我不是在说谎", to: "reidiaz_end_good" },
+      { label: "放下手，走进人群", hint: "有些账，只能用身体来还", to: "reidiaz_end_bad" }
+    ]
+  },
+  reidiaz_end_good: {
+    chapter: "结局 · 偏移",
+    speaker: "雷迪亚兹",
+    text: "倒计时归零的那一刻，水星表面亮起了一千个太阳。\n蓝白色的光从地层深处涌上来，穿过岩层，穿过真空，把整颗行星照得透明。\n三小时后数据送到：水星没有落进太阳，它偏离了原来的轨道七点三厘米；日冕被撕开一道口子，此后太阳黑子的分布再不相同。\n三体舰队减速了。\n不是撤退，是减速。它们在两光年外停下来，第一次认真地看了一眼这个文明。\n地球上没有人庆祝。\n他们把我关进一间没有窗的房间，隔着玻璃问：你差点杀了所有人。\n我说，不。我只是让他们相信，我真的会。\n后来我常想起水星。它还在那里，轨道微微偏了一点，像一个被人推过一把的人。",
+    choices: []
+  },
+  reidiaz_end_bad: {
+    chapter: "结局 · 石头",
+    speaker: "雷迪亚兹",
+    text: "第二天清晨，网上出现了一份分析。\n它比那个男人说得更完整，也更残忍：弹体数量、地层承压、能量总和，一条一条算下来，水星根本不会坠落。计划从第一行字起就不成立。\n人们不再讨论堡垒，不再讨论恒星级氢弹。他们只讨论我——一个想把太阳当武器的总统。\n解押船还没靠岸，我按下了手腕。\n摇篮系统开始计时：我的心跳一停，那些弹体就会替我说话。\n他们放我走了。\n回国的路很长。机场外挤满了人，牌子上写着我的名字，还有别的词。\n第一块石头砸在肩上时，我竟觉得轻松。\n第二块之后，我就看不见太阳了。\n手腕上的装置始终没有响。也许他们拆掉了它，也许它从来就没有真正连上过。",
+    choices: []
+  },
+
+  hines_1: {
+    chapter: "第一章 · 最高的椅子",
+    speaker: "希恩斯",
+    text: "他们把我安排在长桌的中间，那把椅子比两旁高出三公分，像特意为聪明人留的位置。\n“脑科学，”我对着十九张脸说，“人类的大脑还有大片未启用的区域。三体人用质子锁死了基础物理，但锁不住我们还没来得及打开的东西。”\n闪光灯亮成一片。这个方案讨人喜欢：不流血，不昂贵，只需要聪明一点。\n没有人问，如果一个人的智力被提升了，他的判断会不会也跟着改变。\n也没有人问，为什么我的第一笔预算，花在了信念与记忆的交叉区——那不是智力提升该去的地方。\n散会后，惠子在走廊里等我。她替我理了理领带，指尖冰凉，说：你今天像个真正的面壁者。\n我笑了笑。她是我唯一不想骗的人，也是我唯一必须骗的人。",
+    choices: [
+      { label: "公开挂牌“人类智力提升研究所”", hint: "先把门打开，再决定往里放什么", to: "hines_2a" },
+      { label: "把核心实验锁进私人实验室", hint: "最深的秘密，只配给最安静的角落", to: "hines_2b" }
+    ]
+  },
+  hines_2a: {
+    chapter: "第二章 · 第一次提升",
+    speaker: "希恩斯",
+    text: "研究所挂牌那天，来了三百名记者，把走廊堵得水泄不通。\n我给他们看一台最先进的脑磁图设备，再看一名志愿者在屏幕前解一道困扰数学界二十年的猜想。四十分钟后，志愿者敲下最后一行公式。\n掌声像潮水一样涌过来。\n没人注意到，那名志愿者在接入设备之前，已经接受过十七次“校准”。校准的内容不叫智力训练，叫信念植入——只是我没把这两者的区别告诉任何人。\n夜里我翻看数据：智力曲线上升了百分之十一，而“人类能否获胜”这一项的答案，从坚定的“能”变成了一片空白。\n空白不是失败。空白是尚未写入。\n我把这一页单独打印出来，锁进抽屉最里面。",
+    choices: [
+      { label: "扩大公开实验规模，招募更多志愿者", hint: "样本越多，空白越像一条统计规律", to: "hines_3a" },
+      { label: "暂停公开实验，把重点转入信念写入模块", hint: "先把笔磨尖，再往纸上写", to: "hines_3b" }
+    ]
+  },
+  hines_2b: {
+    chapter: "第二章 · 第七十三次",
+    speaker: "希恩斯",
+    text: "私人实验室在伦敦郊外一栋老楼的地下室，窗户朝北，一年到头见不到直射的阳光。\n惠子负责神经映射，我负责写入。我们像两台配合了十二年的仪器，中间不需要语言，只需要屏幕上跳动的波形。\n第七十三次实验的对象是一只恒河猴，编号 R-07。\n它原来总是试图打开笼门，用爪子、用牙、用一切能用的方法。\n四十五分钟后，它安静地坐着，进食，饮水，睡眠正常，只是不再看那扇门了——不是放弃，是不再相信门可以被打开。\n惠子盯着监视器看了很久，久到屏幕都自动熄了。\n“这不是治疗。”她说，声音很轻。\n“这是预防。”我说。\n她转过头来看我，眼睛里有某种东西正在结冰。\n我知道，问题不会消失，只会冬眠。",
+    choices: [
+      { label: "继续推进，把实验对象换成人类志愿者", hint: "猴子不会提问，人会", to: "hines_3a" },
+      { label: "放慢速度，先把 R-07 观察三个月", hint: "让事实多跑一会儿，看看它会不会变", to: "hines_3b" }
+    ]
+  },
+  hines_3a: {
+    chapter: "第三章 · 信念加固",
+    speaker: "希恩斯",
+    text: "第一批“康复中心”建在六座城市，挂牌名目是治疗战后创伤与失败主义。\n来的人大多是军人、教师，还有几个写过悲观社论的记者。他们躺进椅子里，四十分钟后走出来，神色平静，像刚做了一场好觉。\n记者问我，“思想钢印”这个词是不是太刺耳了。\n“那就叫它信念加固。”我说，“人类需要一点确定性，哪怕只是相信自己会输。”\n审批表上，我给每一例都写着同样的适应症：对未来的不确定感。\n夜里统计数字时，我发现自己在数人头，像在数种子。每一个通过这把椅子的人，脑子里都被刻进了同一个结论：这场战争，赢不了。\n他们不会知道自己是种子。他们只会觉得，自己终于想通了。",
+    choices: [
+      { label: "让钢印族慢慢渗透进舰队与殖民部门", hint: "种子要撒在有土的地方", to: "hines_4a" },
+      { label: "接受惠子的请求，让她出席下一次 PDC 听证", hint: "让她站到台前，也许她就此满足", to: "hines_4b" }
+    ]
+  },
+  hines_3b: {
+    chapter: "第三章 · 冰面",
+    speaker: "希恩斯",
+    text: "惠子在深夜把我叫到实验室，屏幕上是一段 R-07 的脑波数据。\n“这不是智力提升，”她说，手指点着屏幕上一个剧烈跳动的峰值，“这是判决。你在写进去的东西，不可逆。”\n我没有否认。否认对她没有用，她和我一起工作了十二年，比任何人都懂这套设备。\n她问：你给他们植入的是什么。\n我说：一个结论。\n她问：什么结论。\n“人类必败。”\n房间里只剩下设备的散热声。她慢慢坐下，像一个终于听懂了一个很长笑话的人。她的脊背挺得很直，我从来没见过她那样。\n“你在为逃亡做准备，”她说，“你要让一部分人先认输，好让他们在舰队里活下去——等三体人到了，他们会选择开船跑，而不是开船撞。”\n我看着她。她全懂了。\n她是我这辈子最不愿被读懂的人。",
+    choices: [
+      { label: "请她加入，成为钢印计划的共同署名者", hint: "如果她站在我这边，这个计划就无懈可击", to: "hines_4a" },
+      { label: "请她进入冬眠，把真相一并带走两百年", hint: "时间是最温和的封口方式", to: "hines_4b" }
+    ]
+  },
+  hines_4a: {
+    chapter: "第四章 · 名单",
+    speaker: "希恩斯",
+    text: "惠子拒绝了共同署名，但也没有去告发我。她只是说：我需要想一想。\n我没有等她想完，就推进了下一步。我让人整理了一份名单：舰队里哪些军官最容易接受“必败”的结论，哪些殖民部门的科学家最愿意留下来做种子。\n名单上有四百三十七个人。我把它贴在实验室的墙上，每天看一遍。\n种子开始发芽了。有个叫章北海的军官——不对，不是他，那是另一个面壁者的事——是一个叫林少将的人，他主动申请调去深空探测队，理由是“想看看太阳系的边界”。我知道他脑子里装着什么。\n夜里我给惠子留了一张便签：冬眠舱已经准备好了。\n她没回我。第二天早上我收到她的邮件，只有四个字：我同意。",
+    choices: [
+      { label: "亲自送她进入冬眠舱", hint: "让她看见我没有退路", to: "hines_5a" },
+      { label: "让助手送她，我不去", hint: "有些告别，不见面更干净", to: "hines_5b" }
+    ]
+  },
+  hines_4b: {
+    chapter: "第四章 · 听证",
+    speaker: "希恩斯",
+    text: "PDC 听证会那天，会场坐满了人。惠子坐在我右边，穿着一件深蓝色的套装，头发梳得很整齐。\n我讲完智力提升计划的最新进展——当然，都是幌子——掌声响起。主持人正要宣布结束，惠子的手举了起来。\n“我是希恩斯博士的合作者，山杉惠子。”她的声音平稳得像念教科书，“我有一个问题。”\n会场安静下来。\n“您在康复中心使用的‘信念加固’技术，其写入内容究竟是什么？”\n我看着她。她的眼睛很亮，像两块打磨过的玻璃。\n我说：这是面壁计划的保密内容。\n她说：那我就替您说出来。\n我按下了口袋里的按钮——那是我预先准备好的逃生装置。",
+    choices: [
+      { label: "打断她，继续走完听证流程", hint: "多拖一分钟，就够种子多醒一颗", to: "hines_5b" },
+      { label: "不打断，让她说完", hint: "真相总要有人说出来", to: "hines_5a" }
+    ]
+  },
+  hines_5a: {
+    chapter: "第五章 · 冬眠舱",
+    speaker: "希恩斯",
+    text: "我亲手把惠子安顿进冬眠舱。\n她躺在那里，身上盖着一层薄薄的毯子，眼睛睁着，看着我。\n“你还有两百年。”我说，“两百年后，一切都会不同。”\n她说：“两百年后，我会第一个醒过来。”\n“为什么？”\n“因为我想亲眼看看，你要救的那些人，到底能不能救你。”\n舱门缓缓合上。玻璃隔开了我们。我看见她的嘴唇动了动，没听清说的是什么。\n我站在那里，直到指示灯从红色变成绿色。\n两百年。我还有两百年去等，去安排，去数种子。\n我转身走出冬眠中心时，伦敦的雨刚好停了。",
+    choices: [
+      { label: "进入冬眠，和她一起等", hint: "最聪明的人，也需要一场长觉", to: "hines_6a" },
+      { label: "留在当代，继续推进种子计划", hint: "醒着的人，才能给睡着的人铺路", to: "hines_6b" }
+    ]
+  },
+  hines_5b: {
+    chapter: "第五章 · 没有说完的话",
+    speaker: "希恩斯",
+    text: "惠子没有说完。主持人以“涉及军事机密”为由切断了她的发言。\n散会后我在走廊追上她。\n“你还想说什么？”\n她停下脚步，看着我，眼睛里没有愤怒，只有一种彻底的、学者式的了然。\n“我想说，”她说，“你给人类植入的不是智力，是失败。你要的不是战胜，是一艘能开走的船。”\n我没有否认。\n她轻声说：“希恩斯，你这个计划，从逻辑上有致命的漏洞。”\n“什么漏洞？”\n“你以为钢印族会开船逃。但如果他们真的相信自己必败，他们为什么要逃？逃有什么用？他们应该选择留下来，做最后一个战死的人。”\n我愣住了。\n这是我从来没有想过的一层。",
+    choices: [
+      { label: "让她进入冬眠，把这个问题也冻起来", hint: "也许两百年后，答案会自己出来", to: "hines_6a" },
+      { label: "修改钢印内容，加入“生存优先”", hint: "补上那个漏洞", to: "hines_6b" }
+    ]
+  },
+  hines_6a: {
+    chapter: "第六章 · 长觉",
+    speaker: "希恩斯",
+    text: "我也躺进了冬眠舱。\n倒数三秒时，我在想一件事：两百年后，惠子醒过来，会先做什么？\n也许她会先去看 PDC 的档案，看看钢印族的名单上有多少人。\n也许她会先去听一场听证会，看看有没有人把真相说出来。\n也许她会先找我，隔着两百年的时差，再问我一遍那个问题。\n我不知道。我闭上眼，让低温把一切都冻住。\n梦里我看见 R-07，它站在那扇永远打不开的笼门前，一动不动，像一座小小的雕像。",
+    choices: [
+      { label: "醒来后直接去见惠子", hint: "两百年的时差，不如一次面对面", to: "hines_7a" },
+      { label: "醒来后先去查档案，看种子发芽了没有", hint: "先看事实，再看她的眼睛", to: "hines_7b" }
+    ]
+  },
+  hines_6b: {
+    chapter: "第六章 · 种子",
+    speaker: "希恩斯",
+    text: "我没有冬眠。我在当代又活了四年，把钢印内容做了最后一次微调——在“人类必败”后面，加上了一行小字：“但生命可以延续，离开就是继续”。\n四年里，我又发展了七百多名钢印族。他们分布在三大舰队、殖民部门、恒星际飞船制造厂。他们彼此不认识，不结社，不联络，像散落在各个抽屉里的种子。\n四年后，我也躺进了冬眠舱。\n倒数三秒时，我在想：惠子说的那个漏洞，补上了吗？\n我不知道。但我知道，我已经做了能做的一切。\n低温覆盖过来时，我最后看见的是实验室墙上的那份名单，数字在黑暗中亮起来：一千一百七十七。",
+    choices: [
+      { label: "醒来后直接去见惠子", hint: "两百年的时差，不如一次面对面", to: "hines_7a" },
+      { label: "醒来后先去查档案，看种子发芽了没有", hint: "先看事实，再看她的眼睛", to: "hines_7b" }
+    ]
+  },
+  hines_7a: {
+    chapter: "第七章 · 两百年后",
+    speaker: "希恩斯",
+    text: "我从冬眠舱里爬出来时，窗外是一个我从未见过的城市——全透明的穹顶，飞行车像鱼群一样穿梭。\n第一通电话是惠子打来的。她说：“我在 PDC 大厅等你。”\n我赶过去，她站在那里，头发白了一半，但脊背还是挺得很直。两百年的时差在她身上只留下了这些痕迹。\n“你来晚了。”她说。\n“什么意思？”\n“最后一次听证会已经定在三天后。我已经提交了破壁申请。”\n我看着她。她的眼睛还是那么亮，像两块打磨过的玻璃。\n“你决定了？”\n“我花了两百年才想清楚一件事。”她说，“你不是在给人类宣判。你是在给人类留一条后路。但这条路不能由一个人来决定。”",
+    choices: [
+      { label: "听证会当天让钢印族提前启航", hint: "用被揭穿的代价，换一次真正的出发", to: "hines_end_good" },
+      { label: "听证会当天不辩解，听她说完", hint: "被看穿的人，最后还可以选择站直", to: "hines_end_bad" }
+    ]
+  },
+  hines_7b: {
+    chapter: "第七章 · 档案",
+    speaker: "希恩斯",
+    text: "我先去了 PDC 的档案库。\n钢印族的名单已经不在保密列表里了——或者说，已经不需要保密了。两千八百三十七人，比我预想的多了一倍还多。他们像藤蔓一样，自己蔓延开了。\n有个细节让我站了很久：名单里有三艘恒星际飞船的舰长。\n三艘。\n我去查那三艘船的状态，发现它们的维生舱已经被偷偷改装过，座位数从一百改成了一千。没有人下令，没有人申请，就是有人悄悄改了。\n像我当初偷偷给钢印加的那一行小字。\n我走出档案库时，阳光照在脸上。我忽然想起惠子的那个问题：如果他们真的相信自己必败，为什么要逃？\n答案我现在才懂——因为他们相信的不是“人类必败”，是“生命可以延续”。我补的那行小字，真的生效了。",
+    choices: [
+      { label: "在听证会前通知三艘舰长按计划出发", hint: "种子已经准备好了，只等一声令下", to: "hines_end_good" },
+      { label: "按原计划出席听证会，不做任何手脚", hint: "让该发生的发生", to: "hines_end_bad" }
+    ]
+  },
+  hines_end_good: {
+    chapter: "结局 · 火种",
+    speaker: "希恩斯",
+    text: "听证会开了十一个小时。\n我坐在台上，一次也没有打断惠子。她把两百年的实验记录一页页投在屏幕上：R-07 的笼门、康复中心的名单、那七个字、还有我后来偷偷加上的那一行小字。\n“他给人类植入的不是智力，是失败。”她说，“但那行小字，是他偷偷给人类开的后门。”\n会场外，三艘恒星际飞船在同一夜离港。没有命令，没有广播，只有一群相信自己必败、也相信生命可以延续的人，安静地登上舷梯。\n他们带走了基因库、种子和人类的全部档案。\n三体探测器追上来时，其中两艘已经进入加速段。\n没有人知道那两艘船会不会抵达任何地方。\n我被判处终身监禁。狱中我收到惠子的最后一封信，只有一句话：你赢了，但赢得不好看。\n我把信折好，放在膝上，笑了。\n好看有什么用？火种出去了。",
+    choices: []
+  },
+  hines_end_bad: {
+    chapter: "结局 · 冰面破裂",
+    speaker: "希恩斯",
+    text: "听证会结束的第三天，全人类都看见了那份名单。\n两千八百三十七名钢印族，像一张网被摊开在阳光下。有人喊反人类罪，有人喊叛国罪，更多的人只是沉默——他们忽然意识到，自己身边可能就坐着一个钢印族，而那个人已经替他们做好了选择。\n康复中心被逐间查封，钢印族被逐个核实、停职、隔离。没有人逃。他们像被写进了另一个结论似的，平静地接受一切。\n我被判处终身监禁。\n宣判后的第二天，惠子在自己的书房里剖腹。桌上留着一份手稿，最后一页只有一行字：我用了两百年，才看懂我们共同做过的事，然后我发现，我已经没有立场评判它了。\n狱中的我被允许读那份手稿。\n我读得很慢，读到最后一行时，把纸按在膝上，久久没有抬头。\n窗外是伦敦常年的阴天。我想，人类终究还是选择相信自己会赢。\n我不知道这算不算一种勇敢。",
+    choices: []
+  },
+  luoji_wb_1: {
+    chapter: "第一章 · 无人破壁",
+    speaker: "罗辑",
+    text: "ETO给三位面壁者都派了破壁人，唯独没有派给我。\n我问过智子，它只回了一句：你不需要。\n起初我以为是轻视。后来才懂——三体人看不懂我，因为他们的语言里没有“隐瞒”这个动作。他们只会计算，不会猜。\n那么，谁能破我的壁。\n我对着镜子坐了一整夜，得出一个荒唐的答案：只有我。\n从那天起，我给自己派了一个破壁人。\n他每天早上刮胡子时看着我，晚上关灯时也看着我。",
+    choices: [
+      { label: "那就把自己当成对手，一条条审问", hint: "要破壁，先学会对自己不客气", to: "luoji_wb_2a" },
+      { label: "先烂掉一段时间，让恐惧自己长出来", hint: "人只有真怕了，才会听话", to: "luoji_wb_2b" }
+    ]
+  },
+  luoji_wb_2a: {
+    chapter: "第二章 · 审问",
+    speaker: "罗辑",
+    text: "我把自己当成对手，逐条审问：罗辑，你的计划最脆弱的地方在哪。\n第一，你必须真的敢死。第二，你必须让三体人相信你敢死。第三，黑暗森林必须成立。\n前两条靠意志，第三条靠宇宙。\n我用了三个通宵把第三条推到尽头：只要有一个文明收到坐标并且有摧毁能力，三体就会被清算。\n概率不低。\n低的是另一件事——人类愿不愿意接受，救我等于救一个赌徒。",
+    choices: [
+      { label: "去找希恩斯，看看另一种答案", hint: "同为面壁者，他选了另一条路", to: "luoji_wb_3a" },
+      { label: "先给自己上一道锁", hint: "破壁人第一个会问的，就是你敢不敢", to: "luoji_wb_3b" }
+    ]
+  },
+  luoji_wb_2b: {
+    chapter: "第二章 · 说给镜子",
+    speaker: "罗辑",
+    text: "我决定先烂掉一段时间。\n要别墅，要酒，要一个从画里走出来的姑娘。所有人都在骂我，包括我自己派来的那个破壁人。\n他每天早上在镜子里问我：你在逃避什么。\n我说，我在给恐惧留一点时间，让它自己长出来。\n人只有真的害怕了，才会允许一个人把全世界的命押在桌上。\n这些话不能说给任何人听。\n只好说给镜子。",
+    choices: [
+      { label: "出去见一次同行，做一次对照", hint: "别人怎么骗人，也能照出你怎么骗", to: "luoji_wb_3a" },
+      { label: "把自己的命接进计划里", hint: "最硬的锁，通常只配一把钥匙", to: "luoji_wb_3b" }
+    ]
+  },
+  luoji_wb_3a: {
+    chapter: "第三章 · 对照",
+    speaker: "罗辑",
+    text: "我去见希恩斯。\n我说，如果你的计划成功，人类会变成一群相信自己注定失败的人。\n他笑得很温和：那至少他们还活着。\n我说，可他们不会再试图赢。\n他反问：赢了又怎样。\n那一刻我明白，我们做的是同一件事的两端：他给人植入结论，我给人类留一个赌局。\n回去的路上我想，将来若要破我的壁，会从哪里下手。\n答案很清楚——从“我到底敢不敢按”下手。",
+    choices: [
+      { label: "回房间，把结论写在白板上", hint: "写下来的东西，就再也装不回去了", to: "luoji_wb_4a" },
+      { label: "买一只录音机，每晚审自己一次", hint: "骗得过别人，骗不过自己的声音", to: "luoji_wb_4b" }
+    ]
+  },
+  luoji_wb_3b: {
+    chapter: "第三章 · 一道锁",
+    speaker: "罗辑",
+    text: "史强听完，抽完一支烟，说：你这计划所有保险都长在一个人身上。你哪天心软，全完。\n我说，所以要给自己上一道锁。\n他问，锁在哪。\n我指了指胸口。\n他愣了一会儿，把烟摁灭：行，你比我狠。\n我摇头。不是狠，是怕。我不怕死，我怕最后一刻忽然想起庄颜还在某间屋子里活着，然后手就松了。\n他说：那就别想。",
+    choices: [
+      { label: "回控制室，给自己写一份判决书", hint: "破壁这件事，只能由自己动手", to: "luoji_wb_4a" },
+      { label: "每天夜里录一段音，逼自己回答", hint: "总得有人反复问同一个问题", to: "luoji_wb_4b" }
+    ]
+  },
+  luoji_wb_4a: {
+    chapter: "第四章 · 白板",
+    speaker: "罗辑",
+    text: "雪地工程完工那晚，我把自己关在主控室，做了一次完整的自我破壁。\n我在白板上写：罗辑的真实计划不是防御，是同归于尽的威胁；武器不是核弹，是暴露；底牌不是技术，是他的心跳。\n写完我退后两步，看着那面墙。\n心里有个声音说：这就是全部，你被看穿了。\n我没有崩溃，只是很久没有动。\n被自己看穿原来是这种感觉——像终于有人替你说出了那句你不敢说的话。",
+    choices: [
+      { label: "把这份报告交给PDC", hint: "被看穿的计划，说出来才有分量", to: "luoji_wb_5a" },
+      { label: "锁进保险柜，谁都不给看", hint: "人类承受得住的谎，比你想象的多", to: "luoji_wb_5b" }
+    ]
+  },
+  luoji_wb_4b: {
+    chapter: "第四章 · 第三十一天",
+    speaker: "罗辑",
+    text: "我买了一只最老的录音机。\n每晚十二点，我按下录音键，假装自己是审讯者：你为什么要做这件事。\n前三十天我都在说谎。第三十一天夜里，我听见自己的声音说：因为人类赢不了，但可以不认输。\n我关掉机器，坐了一会儿，又打开。\n“那你会按下按钮吗。”\n录音里那个我沉默了很久。\n这就是我的破壁人找到的第一条裂缝。",
+    choices: [
+      { label: "把这条裂缝摊到桌面上，公开说", hint: "被戳破的东西，自己戳更有力", to: "luoji_wb_5a" },
+      { label: "把录音机砸了，继续演下去", hint: "只要没人听见，裂缝就还是秘密", to: "luoji_wb_5b" }
+    ]
+  },
+  luoji_wb_5a: {
+    chapter: "第五章 · 交出",
+    speaker: "罗辑",
+    text: "我把自我破壁的报告交给PDC。\n会议厅里有人读到一半就站起来，指着我，说你疯了。有人开始哭。\n“这是威慑。”我说，“它不是胜利，它只是让对面坐下来。”\n有人问，如果三体人不信呢。\n我说，那就真按下去。\n全场安静。\n我知道这一句话会让我在历史里变成什么样的人。\n也知道除此之外，我无话可说。",
+    choices: [
+      { label: "留下来，接受每一句质问", hint: "既然承认了，就别再躲", to: "luoji_wb_6a" },
+      { label: "不解释，等它们自己找上门", hint: "真正的对手不在会场里", to: "luoji_wb_6b" }
+    ]
+  },
+  luoji_wb_5b: {
+    chapter: "第五章 · 保险柜",
+    speaker: "罗辑",
+    text: "我把报告锁进保险柜，没有交给任何人。\n人类能接受一个摆烂的面壁者，接受不了一个拿一千枚核弹指着宇宙的人。\n我继续扮演那个废物：听证会上被骂，被记者围堵，被同僚同情。\n夜里我打开柜子，读一遍自己写给自己的判决书，再锁回去。\n每天早上，镜子里那个破壁人都问我同一个问题：你还能撑多久。\n我不回答。\n这两年，我连自己都骗。",
+    choices: [
+      { label: "走进那间会场，让他们问个够", hint: "被骂一顿，也算破一次壁", to: "luoji_wb_6a" },
+      { label: "去等那颗镜面球体出现", hint: "它一定会来问你同一个问题", to: "luoji_wb_6b" }
+    ]
+  },
+  luoji_wb_6a: {
+    chapter: "第六章 · 罪名",
+    speaker: "罗辑",
+    text: "听证会上，有人拍着桌子问我：你到底为人类做了什么。\n我看着他，忽然觉得这个问题该由我的破壁人来回答。\n“我给自己定了一个罪名，”我说，“然后用五十四年执行它。”\n会场哗然。有人要求立刻解除我的权限，有人要求把我送进精神病院。\n散会后我在走廊里靠墙站了很久。\n原来被揭穿的不是一个阴谋。\n是一个人。",
+    choices: [
+      { label: "回去，把这些话再对自己说一遍", hint: "承认过的事，不该有第二次犹豫", to: "luoji_wb_7a" },
+      { label: "把庄颜的事也算进破壁清单", hint: "最后一个破绽，一定长在人身上", to: "luoji_wb_7b" }
+    ]
+  },
+  luoji_wb_6b: {
+    chapter: "第六章 · 谁先眨眼",
+    speaker: "罗辑",
+    text: "智子找到我，镜面上浮出一行字：你为什么不告诉人类。\n“因为他们会来阻止我。”\n它停了几秒：你也不相信人类。\n我想了想：我相信。我只是相信他们害怕的时候会做蠢事。\n镜面暗下去。\n那一刻我知道，我和它算的是同一件事——谁先眨眼。\n它算不过我。\n因为我从不需要赢，我只需要它相信，我输得起。",
+    choices: [
+      { label: "回控制室，把最后一遍自审做完", hint: "对手信了，就该轮到自己做决定", to: "luoji_wb_7a" },
+      { label: "先去看看那个被藏起来的人", hint: "弱点不处理，永远是个洞", to: "luoji_wb_7b" }
+    ]
+  },
+  luoji_wb_7a: {
+    chapter: "第七章 · 备注",
+    speaker: "罗辑",
+    text: "庄颜被带走那天，我的破壁人在镜子里问我：她重要吗。\n我说不重要。\n他问：那你为什么把钥匙扔进湖里。\n我没有回答。\n那晚我坐在空房子里，把自己重新审了一遍，结论没变，只是多了一行备注：这个计划的执行者有一个弱点，且已经被利用了。\n我在备注下面画了一道线。\n然后我明白，破壁的最后一步，是把弱点当成条件。",
+    choices: [
+      { label: "去终端前，把结论执行掉", hint: "承认过的弱点，就不该再挡路", to: "luoji_wb_8a" },
+      { label: "先把那份报告再读一遍", hint: "读到最后，才敢按下第一个键", to: "luoji_wb_8b" }
+    ]
+  },
+  luoji_wb_7b: {
+    chapter: "第七章 · 承认",
+    speaker: "罗辑",
+    text: "最后一夜，我把那份报告摊在桌上。\n每一行都是我写给自己看的，每一行都在说：你已经没有秘密了。\n我忽然明白，所谓自我破壁不是被拆穿，是承认。\n承认我怕死，承认我拿全人类当筹码，承认我做这一切不是为了赢，是为了让人在死之前，有一次站直了说话的机会。\n我把报告折好，放进抽屉。\n然后坐到终端前面。",
+    choices: [
+      { label: "直接坐到终端前", hint: "承认完了，剩下的是手的事", to: "luoji_wb_8a" },
+      { label: "先照一照镜子", hint: "最后确认一次，那个人还是不是我", to: "luoji_wb_8b" }
+    ]
+  },
+  luoji_wb_8a: {
+    chapter: "第八章 · 一千个光点",
+    speaker: "罗辑",
+    text: "屏幕上一千个光点。\n我的破壁人就坐在我身体里，等着看我松不松手。\n他比任何ETO的人、任何智子都清楚我的破绽：我记得庄颜的呼吸声，记得杨冬墓前那片返青的草，记得我说“我不需要解释”时心里其实一片空白。\n一个记得这些的人，能不能按下这个键。\n这是他要的答案。\n我把手放上去。",
+    choices: [
+      { label: "按下去，让他看清楚", hint: "被看穿的人，也能把事做完", to: "luoji_wb_end_good" },
+      { label: "把手移开", hint: "承认做不到，也算一种诚实", to: "luoji_wb_end_bad" }
+    ]
+  },
+  luoji_wb_8b: {
+    chapter: "第八章 · 镜子",
+    speaker: "罗辑",
+    text: "出发前我照了照镜子。\n里面那个人两鬓全白了，眼睛却很稳。\n我对自己说：罗辑，你被看穿了。\n他点头，没有反驳。\n我们认识太久了，久到不必再互相欺骗。\n“那你打算怎么办。”我问他。\n他笑了一下，说出那句我在心里排练了五十年的答案：\n“被看穿的计划，只要照做，就还是计划。”\n我转身走向控制室。",
+    choices: [
+      { label: "走进控制室，按下确认", hint: "自己给的答案，不能只停在嘴上", to: "luoji_wb_end_good" },
+      { label: "停在门口，回头再想一想", hint: "想太久的人，通常就走不进去了", to: "luoji_wb_end_bad" }
+    ]
+  },
+  luoji_wb_end_good: {
+    chapter: "结局 · 自破其壁",
+    speaker: "旁白",
+    text: "他按下了确认键。\n信号以光速离开太阳系。第三十一个小时，三体舰队减速。\n后来有人问他，那天你在想什么。\n他说，我在等着看我自己会不会后悔。\n五十四年里他每天守着那台终端，手放在确认键上。\n没有人做他的破壁人，所以他必须每天把自己重新破一次：承认自己是一个赌徒，承认这场胜利脏得不能写进任何颂词。\n他做到了。\n人类因此多活了五十四年。",
+    choices: []
+  },
+  luoji_wb_end_bad: {
+    chapter: "结局 · 没有破壁人",
+    speaker: "旁白",
+    text: "他把手从确认键上移开。\n他对自己说：我做不到。用整个文明做赌注，这不是勇气，是疯狂。\n三体舰队继续前进，0.1%光速，不快，也不慢。\n雪地工程被拆解，核弹被回收，他的名字从面壁者名单上划掉。\n有记者问他，你后悔吗。\n他说，我只是终于看清了自己是什么人。\n很多年后，最后一个记得的人死去。\n没有人知道，人类曾经距离活下来，只差一根手指。",
+    choices: []
+  },
+
+  breaker_01_1: {
+    chapter: "第一章 · 简报",
+    speaker: "冯·诺依曼",
+    text: "冯·诺依曼不是我的名字，只是我在三体游戏里的ID。真正的那三个字，早和ETO的档案一起沉进了地下室的铁皮柜。\n简报上，泰勒的画像旁画了三条红线。前国防部长，面壁者一号，对外宣称用球状闪电和宏原子核聚变组建舰队，在柯伊伯带迎击三体。\n最后一行标着：主看不懂他。\n我把简报翻到第三遍，目光停在一条不起眼的附注上——他要求所有舰只必须载人，禁止无人平台。\n一支防御舰队，为什么非要有人坐在里面？\n我合上文件。瘦小，苍白，衬衫领子洗得发皱——这是游戏里的我。而游戏外的我，只做一件事：让他的计划从根上烂掉。",
+    choices: [
+      { label: "让黑客去碰他的私人云盘", hint: "从他脑子里掏东西", to: "breaker_01_2a" },
+      { label: "先查公开的舰队配置清单", hint: "纸面的数字，最不会撒谎", to: "breaker_01_2b" }
+    ]
+  },
+  breaker_01_2a: {
+    chapter: "第二章 · 旁注",
+    speaker: "冯·诺依曼",
+    text: "黑客用了七十二小时。我没催，只在解密成功后要了最原始的那一份。\n文档里没有舰队调度表，只有几页量子力学公式的旁注，字迹潦草：\n「量子态的士兵失去意志，无法被指挥——这正是我要的。」\n「已死的人，不会再死第二次。」\n我把这两行读了十遍，指尖慢慢凉下去。\n他不是在造一支防御舰队。他想把自己的舰队炸成量子态，让一群已经死过的人去撞三体。\n荒唐，但荒唐得有章法。\n真正的问题在另一处：量子态的人连「我是谁」都保不住，他凭什么觉得，他们会听一个活人的命令？",
+    choices: [
+      { label: "恢复文档里被删掉的那一页草稿", hint: "被删掉的话，往往最真", to: "breaker_01_3a" },
+      { label: "拿公式去找理论组交叉推演", hint: "一个人的疯狂，要经得起第二个人算", to: "breaker_01_3b" }
+    ]
+  },
+  breaker_01_2b: {
+    chapter: "第二章 · 三处反常",
+    speaker: "冯·诺依曼",
+    text: "公开的清单比云盘诚实。\n我把三年的预算和装备表铺在桌上，用红笔圈出三处：球状闪电发生器百分之百装在有人舰上；宏核聚变的触发装置不在武器架，在舰体核心区；他三次拒绝无人靶舰演练，批注只有四个字——实战检验。\n三处反常连成一条线，指向同一个方向：那些武器不是朝外的。\n我请ETO的工程师按这个布局做了一次模拟。结果出来时，他没说话，只把屏幕转给我看——\n蓝白色的光从舰体内部渗出来。\n不是击沉，是量子化。\n我关掉屏幕，在笔记本上写下四个字：对己打击。",
+    choices: [
+      { label: "找一位退役物理学家核实参数", hint: "让外行闭嘴的办法，是让内行开口", to: "breaker_01_3a" },
+      { label: "激活基地里的线人，要内部照片", hint: "纸面推断，需要一双现场的眼睛", to: "breaker_01_3b" }
+    ]
+  },
+  breaker_01_3a: {
+    chapter: "第三章 · 被划掉的答案",
+    speaker: "冯·诺依曼",
+    text: "被删掉的那页草稿恢复出来，只有半页。\n最上面是四个字：幽灵舰队。下面是一串演算，末尾停在一个问句——「他们还会服从吗？」\n问句后面没有答案，只有一个被划掉的「会」字。\n我盯着那道划痕看了很久。\n他早就知道。他早就站在我这个位置上，把自己的计划拆穿过一次，然后又亲手把它缝了回去。\n这让我第一次觉得，对面不是一个疯子，而是一个清醒的赌徒。\n我把草稿复印两份，一份锁进柜子，一份压在键盘下面。\n清醒的人最难对付，因为他不需要别人说服，只需要别人没赶上。",
+    choices: [
+      { label: "把逻辑矛盾整理成完整的推演报告", hint: "让他的死穴变成白纸黑字", to: "breaker_01_4a" },
+      { label: "先摸他的行程，找一次单独说话的机会", hint: "破壁总要有一张面对面的桌子", to: "breaker_01_4b" }
+    ]
+  },
+  breaker_01_3b: {
+    chapter: "第三章 · 一道走廊",
+    speaker: "冯·诺依曼",
+    text: "线人在基地做维护，我只让他拍三样：触发装置的位置、士官宿舍的距离、演练日程。\n照片两天后到手。士官宿舍和触发装置之间，只隔着一道走廊。\n工程师看完模拟又看照片，沉默了很久，说：按这个布局起爆，船上的人连警报都听不见。\n我把照片钉在墙上，和泰勒的日程表并排。\n有一张的角落拍到他的便签，背面画着一个很淡的笑。\n那不是得意。我认得那种表情——是一个人已经替自己写好悼词之后，才会有的松弛。\n证据够了。剩下的问题是，先让谁看见。",
+    choices: [
+      { label: "装订成证据册，附上致命逻辑链", hint: "让照片和公式互相作证", to: "breaker_01_4a" },
+      { label: "先写一封匿名信，只写三个字探路", hint: "看看他被戳中之后往哪躲", to: "breaker_01_4b" }
+    ]
+  },
+  breaker_01_4a: {
+    chapter: "第四章 · 钉死退路",
+    speaker: "冯·诺依曼",
+    text: "报告的核心只有一句话：量子态士兵没有意志，没有忠诚，无法接收也无法执行任何指令。\n一支无法被指挥的军队，连「进攻」这个词都不成立。\n我把这句话放在第一页，后面才是公式、配置和照片。\nETO理论组的人看完，问我是不是太绝对。\n我说，不绝对，他就还有退路。\n破壁不是提出疑问，是把所有退路一条条钉死，让他站在原地，连辩解都显得多余。\n那天夜里我重读一遍，删掉了所有带情绪的形容词。\n冰冷的文字比愤怒更疼。\n落款处我写的不是真名，是冯·诺依曼。",
+    choices: [
+      { label: "把副本送交三体联络人，请主过目", hint: "让主知道，人类的矛盾比数学好用", to: "breaker_01_5a" },
+      { label: "同时备好网络发布的公开版本", hint: "舆论是第二把刀，要先磨好", to: "breaker_01_5b" }
+    ]
+  },
+  breaker_01_4b: {
+    chapter: "第四章 · 探针",
+    speaker: "冯·诺依曼",
+    text: "匿名信只有三个字：幽灵舰。\n没有署名，没有附件，寄往他的私人邮箱和PDC的公开信箱。\n我在等他的反应，像在等一枚探针传回数据。\n第三天，他取消了公开行程，舰队基地的保密等级上调两级，三名参与过内部会议的军官被调离。\n他懂了。而且他开始捂。\n捂，就说明信里的东西是真的；调离军官，说明他身边已经有人起了疑心。\n我把这三条变化记进笔记，心里反而静下来。\n猎物开始收拾脚印的时候，猎手就不必再猜方向。\n下一步只剩选择揭穿他的地点——人群里，还是只有我们两个人的房间。",
+    choices: [
+      { label: "准备公开版分析，借舆论围堵", hint: "让他每退一步都踩在人声上", to: "breaker_01_5a" },
+      { label: "申请一次近距离会面，亲自开口", hint: "有些崩溃，必须亲眼确认", to: "breaker_01_5b" }
+    ]
+  },
+  breaker_01_5a: {
+    chapter: "第五章 · 待发布的命题",
+    speaker: "冯·诺依曼",
+    text: "公开版的标题我改了七次，最后定为《幽灵舰队：一支无法被指挥的军队》。\n不提ETO，不提三体，只谈物理和逻辑。\n每张截图都做了来源脱敏，每个数字都核对到小数点后两位。\n发布后四十八小时，它会被转译成六种语言；七十二小时后，记者会把它递到他面前。\n三体联络人看完副本，只回了一句：主仍然不明白，他为什么要这么做。\n我回复：主不必明白。人类自己会替我们完成剩下的事。\n发送键按下去之前，我又检查了一遍他的名字。\n从这一刻起，他不再只是面壁者，而是一道等待被证伪的命题。",
+    choices: [
+      { label: "公开分析，同时申请当面揭穿", hint: "网外有声，屋里有人，他才无路可退", to: "breaker_01_6" },
+      { label: "暂缓发布，先观察他是否孤注一掷", hint: "刀举得太快，会逼他提前动手", to: "breaker_01_6" }
+    ]
+  },
+  breaker_01_5b: {
+    chapter: "第五章 · 三条规矩",
+    speaker: "冯·诺依曼",
+    text: "会面安排在他的私人别墅外，傍晚，没有第三个人。\n我把报告打印成纸版，装订得很薄——厚文件像控诉，薄文件才像判决。\n衬衫还是那件洗皱的，和游戏里的冯·诺依曼一样。不是刻意扮演，只是我已习惯这副不具威胁的样子。\n去之前，我给自己定了三条规矩：不提高声音，不使用「疯子」之类的词，不替他下结论。\n我只把事实一页页翻给他看，让他自己听见计划坍塌的声音。\n车停在路口时，天刚黑。\n别墅的灯亮着。灯下坐着人类权力最高的四个人之一，和一支从未成军的幽灵。",
+    choices: [
+      { label: "按计划单独会面，先让他看完报告", hint: "让他亲手翻到自己的死穴", to: "breaker_01_6" },
+      { label: "开口第一句就点破：量子态士兵不听命令", hint: "第一句话就刺穿，不必寒暄", to: "breaker_01_6" }
+    ]
+  },
+  breaker_01_6: {
+    chapter: "第六章 · 主的疑问",
+    speaker: "冯·诺依曼",
+    text: "见面前一夜，三体联络人突然接入。\n屏幕上只有一行字：主问，量子态的人类是否仍可能被信念驱动。\n这是主第一次就泰勒主动提问。\n我没有立刻回答，而是把那句话重新拆开：信念需要连续的自我，量子态却连自我都无法维持。一个不记得为何赴死的人，不会再死第二次，也不会再听第二次命令。\n联络人沉默了很久，说：主明白了。\n我关掉屏幕，屋里彻底暗下来。\n那一刻我意识到，破壁的意义并不是替主拆掉泰勒的计划，而是把人类最深处的自欺，翻译成主也能理解的语言。\n我只是一个译者。译完之后，原文就该被烧掉。",
+    choices: [
+      { label: "把这次问答附进报告末尾", hint: "让主的问题成为压垮他的最后一行", to: "breaker_01_7" },
+      { label: "不附，只保留最干净的物理矛盾", hint: "越少牵涉主，公众越无法替他开脱", to: "breaker_01_7" }
+    ]
+  },
+  breaker_01_7: {
+    chapter: "第七章 · 书房",
+    speaker: "冯·诺依曼",
+    text: "他下车时看见了我，脚步停了半秒。\n路灯把两个人的影子拉得很长，我的比他的更瘦。\n「你是谁。」\n「破壁人。」我说，「负责你。」\n他没有叫警卫，只把目光落在我手里的薄册子上。\n我们进了书房。他站在书桌另一侧，我站在门边，中间隔着三米，和一支从未成军的舰队。\n我把报告递过去，没有解释。\n他翻到第三页，脸色从白变灰；翻到最后一页时，纸边已经被攥皱。\n我等了很久才开口：「量子态士兵没有意志，没有忠诚，连自己是敌是友都不知道。」\n「你造的不是舰队，是一群互相乱撞的幽灵。」\n书房里只剩挂钟在走。",
+    choices: [
+      { label: "补一句：你早知道，所以删掉过那个答案", hint: "把他最后一点自我辩护也拿走", to: "breaker_01_8" },
+      { label: "不再说话，把公开发布键留给他看", hint: "沉默比宣判更像终审", to: "breaker_01_8" }
+    ]
+  },
+  breaker_01_8: {
+    chapter: "第八章 · 发送键",
+    speaker: "冯·诺依曼",
+    text: "他把报告攥成一团，指节发白。\n「你想怎么样。」\n这句话一出口，我就知道壁已经裂了——他开始谈条件，而面壁者不该和任何人谈条件。\n我告诉他，完整分析已经排进发布队列，随时可以上线；也可以只交回组织，从此不再出现。\n他看着我，像在辨认一个从游戏里走出来的人。\n「冯·诺依曼。」他念出这个ID，声音很轻。\n我没有纠正他。真名对将死之人没有意义。\n离开别墅时，天已经全黑。我在车里坐了十分钟，指尖停在发送键上。\n往前一步，是让全人类一起审判他；退后一步，是赌他会就此停下。\n我只需要选一次。",
+    choices: [
+      { label: "发布完整分析，公开这次会面", hint: "把最后一刀补在所有人的注视下", to: "breaker_01_end_good" },
+      { label: "撤下发布队列，只把报告交回ETO", hint: "壁已破，不必再踩一脚", to: "breaker_01_end_bad" }
+    ]
+  },
+  breaker_01_end_good: {
+    chapter: "结局 · 破壁成功",
+    speaker: "旁白",
+    text: "泰勒的舰队预算被PDC全票暂停。\n他在别墅里把自己锁了三天。第四天早上，新闻说他饮弹自杀。\nETO给我发了一枚刻着「破壁人·泰勒」的勋章，三体联络人说，人类的自相矛盾，比主想象的更致命。\n我坐在地下室里，看着那枚勋章，忽然觉得空。\n我破了泰勒的壁，但我没有赢，主也没有赢。\n人类只是又一次证明了，自己会在最绝望的时候，做出最荒唐的决定。\n而我只是那个把荒唐说出来的人。\n游戏里的冯·诺依曼还站在荒原上，瘦小，苍白。\n我注销了那个ID，没有留下真名。",
+    choices: []
+  },
+  breaker_01_end_bad: {
+    chapter: "结局 · 打草惊蛇",
+    speaker: "旁白",
+    text: "我选择了收手。\n泰勒却没有停下。他销毁了全部证据，把舰队演练提前了两周。\n那天夜里，木星轨道上的灯光从蓝变白，又从白变无。上千艘舰只在自己人的武器里消失，量子化的幽灵舰队真的朝三体方向去了。\n三体舰队第一次减速。\n我在ETO后勤的地下室里，看着屏幕上那片远去的微光，终于明白自己错在哪里。\n他赌的从来不是「量子幽灵能赢」，而是「量子幽灵能让三体怕」。\n我破了他的壁，却没懂他的赌。\n主也没有懂。\n后来组织遭到清剿，我烧掉了冯·诺依曼的档案。那枚没发出去的勋章，和真名一起埋进了灰里。",
+    choices: []
+  },
+
+  breaker_02_1: {
+    chapter: "第一章 · 代号",
+    speaker: "墨子",
+    text: "地下室的灯管坏了三根，没有人来修。\n我叫墨子。这只是我在三体游戏里用了很多年的一个ID，不是我的名字。真名在加入ETO那年就被抹掉了，连我自己也快忘了。\n桌上摊着雷迪亚兹的档案。委内瑞拉总统，南美强人，面壁者二号。对外他说要造恒星级氢弹，在水星背阳面建人类最后的堡垒。\n他说这话时，台下有人在哭，有人在鼓掌。\n我翻到第三遍，看见一个说不通的地方：那座堡垒的防护标准，低于它脚下氢弹的杀伤范围。\n他不像是在建一个能活下来的地方。",
+    choices: [
+      { label: "调阅水星工程的钻探日志", hint: "地基只挖五十米，剩下的钱挖去了哪", to: "breaker_02_2a" },
+      { label: "先把全球工厂的核弹产量加总", hint: "先弄清楚他到底造出了多少", to: "breaker_02_2b" }
+    ]
+  },
+  breaker_02_2a: {
+    chapter: "第二章 · 十二公里",
+    speaker: "墨子",
+    text: "钻探日志是从一个离职工程师手里买来的，花掉我半年的活动经费。\n公开图纸上，堡垒地基只有五十米。但另有一支队伍，在水星背阳面的十个点上，钻到了地下十二公里。\n日志给这些孔写的用途是“特殊地质采样”，采样记录却整页空白，连一张岩芯照片都没有。\n十二公里。那里已经没有地表可以吸收冲击。\n我把十个孔连成环。那个环正落在水星公转方向的反推面上。\n这不是地基。\n这是刹车片。",
+    choices: [
+      { label: "混进水星基地，亲眼看看井口", hint: "日志会撒谎，混凝土不会", to: "breaker_02_3a" },
+      { label: "去找负责这个项目的工程部长", hint: "挖坑的人，知道坑有多深", to: "breaker_02_3b" }
+    ]
+  },
+  breaker_02_2b: {
+    chapter: "第二章 · 一千倍",
+    speaker: "墨子",
+    text: "我没有黑进任何系统，只把公开数据抄在纸上，一行一行地加。\n全球工厂满负荷运转十年，能造出的恒星级氢弹上限是十二万枚。他对外报出的数字，是它的四倍。\n再往下算，我把笔停住了。\n要让水星失速坠向太阳，得改变它的公转动量。十二万枚同时引爆所能提供的动能，比所需的少整整三个数量级。\n不是差一点，是差一千倍。\n能做到总统的人不会算不出这个数。\n那他要算的就不是物理，是别人的心。",
+    choices: [
+      { label: "去见他本人，当面问他在赌什么", hint: "数字不会回答，人会", to: "breaker_02_3b" },
+      { label: "潜进水星基地，验证井底有没有弹", hint: "先确认那不是纸面上的唬人", to: "breaker_02_3a" }
+    ]
+  },
+  breaker_02_3a: {
+    chapter: "第三章 · 背阳面",
+    speaker: "墨子",
+    text: "我以设备检修的名义进了水星背阳面的基地。\n这里没有天空，只有一片凝固的黑。头盔里只剩自己的呼吸。\n十个井口都封死了，封层上贴着红封条，签名是他的手笔。我撬开一角，把探针送下去。\n屏幕上浮出金属堆积的密度图，与核弹头合金一致，深度栏的数字一直往上跳。\n至少八万枚。\n它们不是堡垒的地基，是压在一颗行星背后的手。\n我抬头看那颗远处的太阳。很小，很亮，很安静。\n雷迪亚兹想把它变成一把枪。",
+    choices: [
+      { label: "把探针数据与钻探日志并成一份证据", hint: "一条线是猜，两条线才是图", to: "breaker_02_4a" },
+      { label: "原路撤出，先不惊动任何人", hint: "证据要活着带出去才算证据", to: "breaker_02_4b" }
+    ]
+  },
+  breaker_02_3b: {
+    chapter: "第三章 · 部长",
+    speaker: "墨子",
+    text: "工程部长在一间没有窗的办公室里见我，他以为我是来谈采购的供应商。\n我先聊天气，再聊工期，最后才问：那十个深孔，什么时候回填。\n他的手停了一下。\n“总统先生的要求是，孔留到最后一刻。”\n“最后一刻是什么时候。”\n“他没说。他只说，那是一个我们能听见的时刻。”\n我点头，把这句话记下来，像记一句普通的公文。\n走出大楼时，我在心里把它翻译了一遍：不是防御的时刻，是引爆的时刻。",
+    choices: [
+      { label: "顺着这条线，查清他身边的人", hint: "主子的秘密，常在下属的手上", to: "breaker_02_4b" },
+      { label: "立刻去水星基地核对那十个孔", hint: "话可以作假，井口不会", to: "breaker_02_4a" }
+    ]
+  },
+  breaker_02_4a: {
+    chapter: "第四章 · 清查",
+    speaker: "墨子",
+    text: "雷迪亚兹开始清查泄密者。\n他调走三个部门的档案，把参与钻探的工程师分批送进“健康疗养”。第二天，其中两个人没有回来。\n同一天，我在安全屋的门缝里捡到一张纸，只有一行字：\n“他已经做好了自己会死的准备。”\n我在桌边坐了很久。一个把全部筹码押在威慑上的人，如果连自己的命也算了进去，那么他手里一定还攥着一个开关。\n筹码，开关，和一颗行星。\n三样东西摆在一起，就是一副牌。",
+    choices: [
+      { label: "把水星与太阳系的轨道关系全部画出来", hint: "先看这副牌能掀翻什么", to: "breaker_02_5a" },
+      { label: "设法接近他，看那个开关在他身上哪里", hint: "牌打出去之前，先摸清牌背", to: "breaker_02_5b" }
+    ]
+  },
+  breaker_02_4b: {
+    chapter: "第四章 · 三个月",
+    speaker: "墨子",
+    text: "三体联络人的指令很短：尽快破壁，期限三个月。\n我问，期限到了呢。\n没有回复。\n地下室里只剩下机器风扇的声音。我知道那沉默的意思——ETO从不宽恕失败者，三体人也不会。\n我把雷迪亚兹的资料重新排了一遍：氢弹，水星，堡垒，威慑。缺一块。\n缺的那一块，是他在什么情况下会按下按钮。\n找到它，壁就破了。找不到，我得先于他死。\n窗外天亮时，我把那张纸翻了过来，在背面写下第一行推算。",
+    choices: [
+      { label: "从头推一遍水星坠日的轨道连锁", hint: "把物理学当盘问，一句句逼供", to: "breaker_02_5a" },
+      { label: "改用假身份，直接约他谈一次", hint: "最快的路，往往要走到对手面前", to: "breaker_02_5b" }
+    ]
+  },
+  breaker_02_5a: {
+    chapter: "第五章 · 推不动的行星",
+    speaker: "墨子",
+    text: "十颗行星的轨道被我画在一张纸上，纸上还有一个不存在的按钮。\n水星失速，坠入太阳，抛出的物质搅动日冕，改变其余行星的轨道，地球也在其中。\n这不是武器，这是同归于尽。\n可在纸上算到最后，能量差了一千倍。这个计划在执行上根本不成立。\n但威慑不需要成立。威慑只需要让对方相信，这个人真的会按下去。\n雷迪亚兹赌的从来不是水星真的掉下去。\n他要的是三体舰队在计算这个可能性的时候，停一停。",
+    choices: [
+      { label: "把计算写成公开信，交给所有人", hint: "拆掉恐惧，最快的办法是算给它看", to: "breaker_02_6a" },
+      { label: "先当面拆穿他，看他如何辩解", hint: "破壁人要看着猎物的脸", to: "breaker_02_6b" }
+    ]
+  },
+  breaker_02_5b: {
+    chapter: "第五章 · 会客室",
+    speaker: "墨子",
+    text: "我用一个假身份约他在使馆的会客室见面，中间隔着一张长桌。\n“总统先生，”我说，“您埋在水星的东西，其实推不动那颗行星。”\n他把杯子放下，没有惊讶。\n“你算过。”\n“算过。差一千倍。”\n他笑了一下，很轻。“那你应该也明白，我要的不是它掉下去。”\n“那您要什么。”\n“要他们算。”他站起来，“只要他们肯算，就说明他们怕。”\n门在他身后合上。\n我坐着没动，第一次觉得自己要破的不是一道壁，是一个人最后的活法。",
+    choices: [
+      { label: "把这次谈话的内容整理成证据", hint: "他自己说的，比任何人说的都重", to: "breaker_02_6a" },
+      { label: "亮明破壁人的身份，再问一次", hint: "让他知道，谁在算他的账", to: "breaker_02_6b" }
+    ]
+  },
+  breaker_02_6a: {
+    chapter: "第六章 · 公开信",
+    speaker: "墨子",
+    text: "我把计算写成三页纸的公开信，标题是《一个推不动的行星》。\n第一页是当量，第二页是动量，第三页是那个环形钻孔图。没有一句形容词，只有数字和坐标。\n发出去之前，我在末尾加了一行：\n“他不是要炸水星，他是要所有人相信他会。”\n按下的瞬间，我想到一件事：三体人不懂这行字。他们只懂胜负，不懂虚张声势。\n所以这封信不是写给三体看的。\n是写给人类的。",
+    choices: [
+      { label: "守在终端前，看舆论怎么发酵", hint: "先让世界自己吵起来", to: "breaker_02_7a" },
+      { label: "同时去查他身上那个开关", hint: "一边拆名声，一边拆引信", to: "breaker_02_7b" }
+    ]
+  },
+  breaker_02_6b: {
+    chapter: "第六章 · 走廊",
+    speaker: "墨子",
+    text: "我在PDC的走廊里拦住他。\n“雷迪亚兹先生，我是负责你的破壁人。”\n他停下脚步，比我高出半个头，脸上的皱纹很深。\n“你来得比我想的早。”\n“因为您的计划从第一页起就是假的。核弹不够，能量不够，水星推不动。”\n“所以呢。”\n“所以您不是在造武器，是在造一场所有人都相信的恐吓。”\n他沉默了三秒，说：“恐吓也是武器。它不必真的爆炸，只要被相信。”\n他走开时，皮鞋声在走廊里回响。\n我站在原地，发现他一句也没有否认。",
+    choices: [
+      { label: "把他这句话连同计算一起发出去", hint: "他自己给了一个最好的标题", to: "breaker_02_7a" },
+      { label: "顺着“开关”这条线往下挖", hint: "一个人不怕死，是因为死能替他做事", to: "breaker_02_7b" }
+    ]
+  },
+  breaker_02_7a: {
+    chapter: "第七章 · 舆潮",
+    speaker: "墨子",
+    text: "那份计算在四十八小时里传遍了两百个国家。\n有人把它做成了动画：水星被炸得晃了一下，继续转。评论区从震惊变成羞辱，再变成一种更冷的东西——被欺骗的恨。\n有议员在电视上说，我们为一个疯子省下了三年的预算。\n第三天，PDC宣布召开听证会。\n我在地下室里看直播，没有开灯。\n拆掉一个人的声望，比拆掉一支部队容易得多。\n只是我始终记得他那句话：恐吓只需要被相信。\n而现在，没有人肯信了。",
+    choices: [
+      { label: "带着全部材料出席听证会", hint: "最后一刀要当众落下", to: "breaker_02_8a" },
+      { label: "听证会前夜，先去拦住他", hint: "给对手一夜时间，看他会做什么", to: "breaker_02_8b" }
+    ]
+  },
+  breaker_02_7b: {
+    chapter: "第七章 · 引信",
+    speaker: "墨子",
+    text: "我花了六天找到那个开关。\n不是核弹的引爆器，是他身体里的东西：一枚贴在心口的传感片，心跳停止即触发。他把自己怎么死，也设计进了计划。\n这意味着没有人能靠杀他来解除它。\n三体联络人转来一条指令，只有四个字：不要动他。\n我明白那四个字——ETO要他活着，被人类自己撕碎。\n我把传感片的资料放进公开文件，又取了出来。\n有些人不必被杀死。\n他们只需要被看懂。",
+    choices: [
+      { label: "带着这份材料走进听证会", hint: "让所有人看见他连死都算过", to: "breaker_02_8a" },
+      { label: "听证会前，去停车场见他最后一面", hint: "有些答案，只能当面问", to: "breaker_02_8b" }
+    ]
+  },
+  breaker_02_8a: {
+    chapter: "第八章 · 长桌",
+    speaker: "墨子",
+    text: "听证会在日内瓦。长桌那一端坐着雷迪亚兹。\n我把三页纸投在屏幕上，一页一页地念：当量，动量，钻孔。念完以后，会场没有掌声，也没有怒骂，只有一种整齐的、缓慢的沉默。\n有代表问：“那我们这一年，到底在造什么？”\n没有人回答。\n他坐在那里，双手放在桌上，像一尊还没被拆掉的雕像。\n我最后一次看他时，想起他说的那句“恐吓也是武器”。\n现在这把武器被拆开摆在所有人面前，零件一件不少。",
+    choices: [
+      { label: "把材料正式提交，等裁定", hint: "把结论交给程序，而不是情绪", to: "breaker_02_end_good" },
+      { label: "当场要求他说出那句“我们推不动”", hint: "让他在所有人面前亲口承认", to: "breaker_02_end_bad" }
+    ]
+  },
+  breaker_02_8b: {
+    chapter: "第八章 · 停车场",
+    speaker: "墨子",
+    text: "听证会前一天，我在停车场等到他。\n“您还有一夜。”我说，“可以撤回，可以说那只是一次模拟推演。”\n他看着我，眼睛里有血丝。\n“撤回之后呢？人类会重新相信我，然后什么都不做，等着被清理。”\n“至少他们不会恨您。”\n“我不需要他们不恨我。”他说，“我需要他们怕。”\n他从口袋里掏出一张纸，是我那份公开信的复印件，边角已经翻毛。\n“你写得对，推不动。可你想过没有——如果我不写这个赌局，人类连赌桌都不会有。”\n他把纸塞回口袋，走进夜里。",
+    choices: [
+      { label: "不再多言，明天照常出席", hint: "答案已经拿到，剩下的是流程", to: "breaker_02_end_good" },
+      { label: "把这段对话公开，逼他提前动手", hint: "抢在他之前，先把火点着", to: "breaker_02_end_bad" }
+    ]
+  },
+  breaker_02_end_good: {
+    chapter: "结局 · 破壁",
+    speaker: "旁白",
+    text: "听证会的结论在三天后公布：水星工程中止，雷迪亚兹的面壁者身份被撤销。\n他的计算被反复引用，成了教科书里关于“虚张声势”的一个注脚。\n他回国那天，机场外聚了几万人。第一块石头砸在他肩上时，他站着没有动。\n后来下了雨，人群散去，地上只剩一堆被踩烂的标语。\n墨子在地下室里关掉直播。\n三体联络人只回了两个字：收到。\n他破了他的壁。三体舰队没有减速，人类也没有因此更安全。\n他只是把一个人用命撑起来的那点恐惧，拆成了废铁。",
+    choices: []
+  },
+  breaker_02_end_bad: {
+    chapter: "结局 · 反噬",
+    speaker: "旁白",
+    text: "他算对了数字，却算漏了一件事：那个人不需要他相信，只需要他不确定。\n逼问的第二天，雷迪亚兹在水星基地召开发布会，现场引爆了一枚小型氢弹。\n画面里，井口喷出蓝白色的光柱，穿过真空，照亮了整颗行星的边缘。\n“诸位看见的不是失败，”他说，“是警告。”\n从那以后，再没有人提那三个数量级。人们只记得那道光。\n三体舰队减速了，联合国重新批了预算，报纸把他称作撑住天空的人。\n墨子坐在安全屋里看着那道光，忽然明白——\n他要的从来不是让人相信，是让人替他把恐惧说出口。",
+    choices: []
+  },
+
+  yamasan_1: {
+    chapter: "第一章 · 双重身份",
+    speaker: "山杉惠子",
+    text: "ETO的邮件在凌晨三点抵达，用词很短：破壁人三号，目标希恩斯，三体游戏代号亚里士多德。\n我读了两遍，把屏幕合上，坐在黑暗里听隔壁房间的呼吸声。\n那是我的丈夫，也是我十二年的实验伙伴。我们一起发表论文，一起在伦敦的雨天里争论神经映射的精度。\n组织选我，不是因为我更聪明，而是因为我已经在他身边。\n天亮后他煮了咖啡，问我睡得好不好。\n我说好。\n他没有怀疑。他从来不需要怀疑我——这是我最大的优势，也是我最不愿意动用的东西。\n从今天起，我要用妻子的眼睛，去看一个面壁者。",
+    choices: [
+      { label: "从实验记录入手，看信念校准的数据", hint: "脑波不会替它的主人撒谎", to: "yamasan_2a" },
+      { label: "从预算流向入手，查康复中心的真实账目", hint: "钱花在哪里，计划就藏在哪里", to: "yamasan_2b" }
+    ]
+  },
+  yamasan_2a: {
+    chapter: "第二章 · 猴笼",
+    speaker: "山杉惠子",
+    text: "他所有密码都是我结婚那天的日期，倒着写。\n记录里有两组恒河猴：一组会反复尝试打开笼门，另一组在接入设备十七次之后，不再尝试。\n它们进食，睡眠，彼此梳理毛发，一切正常。只是不再相信那扇门可以被打开。\n他在页边写：不确定性是病态，确定性是稳态。\n我把这一页看了很久。治疗是让人还能继续试下去，不是让人不再试。\n走廊里他正在打电话，声音温和，像在谈论明天的天气。\n我把记录按原样放回，连摆放的角度都对好。\n那一刻我知道，做妻子和做破壁人，用的是同一双手。",
+    choices: [
+      { label: "去看人类受试者的原始脑波", hint: "猴子的沉默，要用人来验证", to: "yamasan_3a" },
+      { label: "当晚把三页纸推到他面前", hint: "十二年夫妻，值得一次正面的问", to: "yamasan_3b" }
+    ]
+  },
+  yamasan_2b: {
+    chapter: "第二章 · 账目",
+    speaker: "山杉惠子",
+    text: "康复中心公开的收费是每例八百美金。\n批下来的预算，是每人八万。\n我用两个晚上追平了差额：全部划进一个叫信念加固设备的科目，负责人是他，技术文档一份也没有。\n账面干净得像手术台。\n我忽然想起他最近的变化：不再开玩笑，说话时常盯着远处某个点，像在听一个只有他能听见的声音。\n同床十二年，我认识他的每一种沉默。这是新的一种。\n伦敦在下雨，雨点打在玻璃上，像有人很轻地敲门。\n我没有开灯，也没有回答。",
+    choices: [
+      { label: "黑进设备固件，看它究竟写入了什么", hint: "让机器替他说出真话", to: "yamasan_3a" },
+      { label: "装作什么都不知道，继续做他的助手", hint: "妻子有时比破壁人更有耐心", to: "yamasan_3b" }
+    ]
+  },
+  yamasan_3a: {
+    chapter: "第三章 · 固件",
+    speaker: "山杉惠子",
+    text: "固件里有一段模块，注释只有四个字：人类必败。\n程序在受试者的杏仁核与前额叶之间写入这条信念，并覆盖一切可以反驳它的回路。写入后不可删除，只能被时间磨钝。\n我把手从键盘上移开，听见自己的心跳。\n他不要人类更聪明。他要人类先认输。\n认输的人不会去争那张船票，他们会安静地排队，把位置让出来。\n我想起他常说的话：希望是一种很贵的物资。\n他把消耗希望的成本，降到了八百美金一次。\n窗外天快亮了。我第一次希望自己查不出来。",
+    choices: [
+      { label: "把代码与账目整理成三份文件", hint: "证据要分开放，人才不会被一网打尽", to: "yamasan_4a" },
+      { label: "先把真相说给他听，看他怎么回答", hint: "让他知道，我已经站在墙外", to: "yamasan_4b" }
+    ]
+  },
+  yamasan_3b: {
+    chapter: "第三章 · 晚餐",
+    speaker: "山杉惠子",
+    text: "我把三页纸推到他面前。他没有看纸，先看我的脸。\n「惠子，」他说，「你比我想的早。」\n「你给他们写的是什么。」\n「人类必败。」\n他说得很平静，像在念一份实验报告：赢了，人类活不下来；输了，至少还有船可以开出去。他要的不是胜利，是种子。\n我问，那你为什么不做第一个受试者。\n他沉默了几秒：因为我还需要有人相信我能赢，才能继续做下去。\n那张餐桌我们用了十二年，那天晚上它显得特别长。\n我收拾碗碟时手很稳。稳得让我自己害怕。",
+    choices: [
+      { label: "连夜把材料整理成破壁报告", hint: "知道了就要留下证据，记忆会心软", to: "yamasan_4a" },
+      { label: "问他一句：你要我陪你一起冬眠吗", hint: "有些答案，只能由他自己说出来", to: "yamasan_4b" }
+    ]
+  },
+  yamasan_4a: {
+    chapter: "第四章 · 铁证",
+    speaker: "山杉惠子",
+    text: "我把代码、账目、受试者名单整理成三份：一份给组织，一份给PDC，一份留在我自己手里。\n整理到凌晨，屏幕上的名字一页页往下滚，翻不到底。\n三千多人。他们不知道自己的脑子里多了四个字，明天照样上班，照样在饭桌上说人类会赢。\n我忽然停下手。\n破壁之后呢。钢印不可删除。我拆掉的只是工厂，不是已经造出来的产品。\n窗外天亮了，伦敦的雾把路灯泡成一团一团的黄。\n我把三份文件摆开，像摆一副牌。\n规则是我定的：我只需要选一张打出去。",
+    choices: [
+      { label: "把三份文件锁进保险箱，先不交", hint: "交出去的是铁证，收不回来的是三千人", to: "yamasan_5a" },
+      { label: "告诉他，我手里有能毁掉他的东西", hint: "让他来求我，或者来杀我", to: "yamasan_5b" }
+    ]
+  },
+  yamasan_4b: {
+    chapter: "第四章 · 请求",
+    speaker: "山杉惠子",
+    text: "他跪下来的时候，我正在收拾实验台。\n十二年里他只在婚礼上跪过一次。\n「跟我一起冬眠。」他说，「两百年后，你会看到结果。」\n我没有扶他。\n「你要我陪你看人类认输。」\n「我要你活着看到那七艘船开出去。」\n我盯着他的头顶。那里有一小块地方开始稀疏了，我以前从来不知道。\n我想起那些在康复中心门口排队的人，他们以为自己是来治病的。\n「如果我不去呢。」\n「那我会一个人去。」他抬起头，「但我会一直等在那边。」\n窗外的雾把整条街糊住了。我听见自己说：好。",
+    choices: [
+      { label: "答应他，但在进入冬眠前留下暗记", hint: "记忆可以被冰封，笔记不会", to: "yamasan_5a" },
+      { label: "答应他，什么也不留，只带着眼睛去", hint: "有些事，只有活到那天的人才配说", to: "yamasan_5b" }
+    ]
+  },
+  yamasan_5a: {
+    chapter: "第五章 · 暗记",
+    speaker: "山杉惠子",
+    text: "冬眠前最后一夜，我把那份没交出去的报告又读了一遍。\n然后删了它。不是销毁，是删在自己脑子里：我把关键推导改写成几个不相干的问题，写在实验本最后几页，夹进一堆无关的数据里。\n两百年后如果我还记得怎么把它们拼起来，我就还能再破他一次。\n如果忘了，那也是我自己的选择。\n舱门开着，冷气从里面溢出来，白色的，像呼吸。\n他在旁边的舱里看着我，隔着玻璃，嘴唇动了动。\n我没有听清。我朝他点了点头。\n灯灭之前我想的是：我不是在包庇他，我是在延长这个案子。",
+    choices: [
+      { label: "在冰冷下来之前，回想那几页笔记的位置", hint: "把钥匙握在手里，比锁在保险箱里稳", to: "yamasan_6a" },
+      { label: "闭上眼睛，把自己完全交给时间", hint: "两百年够长了，长到可以改变结论", to: "yamasan_6b" }
+    ]
+  },
+  yamasan_5b: {
+    chapter: "第五章 · 长夜",
+    speaker: "山杉惠子",
+    text: "最后几个小时，我们没有谈计划。\n他煮了咖啡，用的是我们刚搬进这栋房子时买的那只壶，壶嘴磕掉过一小块。\n他说起第一次见我，在一次关于猕猴前额叶的会议上，我提问时把他逼到答不上来。\n我说我不记得了。他说他记得。\n我没有提那三千个人。那些名字在这间屋子里排不下，也不该在这间屋子里。\n离开前，我把一只旧录音笔塞进实验台抽屉，没有说给谁听，也没有说录什么。\n舱门关上时，我看见玻璃那边他的手指按在上面。\n我也把手按上去。\n隔着一层冰，温度传不过来。",
+    choices: [
+      { label: "在失去意识前，把那个抽屉的位置记牢", hint: "留了东西，就要记得回来取", to: "yamasan_6a" },
+      { label: "什么也不记，跟着冷一起沉下去", hint: "带着太多东西冬眠的人，醒不过来", to: "yamasan_6b" }
+    ]
+  },
+  yamasan_6a: {
+    chapter: "第六章 · 苏醒",
+    speaker: "山杉惠子",
+    text: "我先醒了。\n两百年后的空气是消毒水和金属的味道。护士说话很快，我听不全，只听懂一个词：钢印族。\n后来我知道，那已经是一个不需要组织的群体。他们不结社，不联络，彼此不认识，只是共同相信人类赢不了——然后安静地去学飞行、学维生、学怎样在另一颗行星上种地。\n三大舰队里都有他们。殖民局里更多。\n而他还在冬眠。舱位编号上标着一个红色的叉，没有人解释那是什么意思。\n我站在观测窗前，第一次看见两百年前的星空原样铺开。\n原来他成功了。\n原来我要破的壁，早就自己长出了墙。",
+    choices: [
+      { label: "把自己关起来，先把偷记的推导拼回去", hint: "先让手上有东西，再去说话", to: "yamasan_7a" },
+      { label: "去找ETO的联络人，确认任务是否还在", hint: "两百年前的委托，也许已经过期", to: "yamasan_7b" }
+    ]
+  },
+  yamasan_6b: {
+    chapter: "第六章 · 名单",
+    speaker: "山杉惠子",
+    text: "我醒来时，他还在睡。\n医生说他进入冬眠时的生理数据有问题，多次唤醒失败，只能继续维持。舱位编号上标着一个红色的叉。\n我在他的档案柜里找到一份名单，纸已经脆了，一碰就掉渣。\n三千七百二十一个名字，按年份排列，最后一页只写了一半。\n每个名字后面画着一个小小的勾，像有人在数收成。\n我把名单摊在桌上，站了很久。\n两百年过去，这些人早就死光了。可他们脑子里那四个字，还在他们的孩子、他们的学生、那些被他们说服过的人身上继续活着。\n我把名单折好，放进衣袋。\n下周有一场听证会。名单需要一个说话的人。",
+    choices: [
+      { label: "逐条核对名单，把活着的钢印族找出来", hint: "死人不会作证，活人会说错话", to: "yamasan_7a" },
+      { label: "去找他的主治医生，问那个红叉是什么意思", hint: "红叉之下，也许还有一个人", to: "yamasan_7b" }
+    ]
+  },
+  yamasan_7a: {
+    chapter: "第七章 · 前夜",
+    speaker: "山杉惠子",
+    text: "听证会前一夜，我把两百年积攒的材料摊满一桌：代码残片、预算底稿、冬眠记录，还有那份名单。\n我试着把它们串成一段能在十分钟内讲完的话。\n每写一遍，删掉的都比留下的多。\n最后剩下三句：他做了什么。他为什么要做。人类有没有权利知道。\n第三句最难。知道了，钢印族会被拆开、审问、隔离；不知道，他们会在某一天把人类的希望一起带上船。\n我把笔放下，走到窗前。\n两百年前的伦敦此刻应该在下雨。这里没有雨，只有恒定的、人工调过的光。\n我忽然很想知道，如果他也醒着，会站在哪一边。",
+    choices: [
+      { label: "把三句话压缩成一句，反复念到不会说错", hint: "说得越少，越没有人能打断", to: "yamasan_8a" },
+      { label: "把稿子收起来，只带那份名单进场", hint: "名字比道理更有说服力", to: "yamasan_8b" }
+    ]
+  },
+  yamasan_7b: {
+    chapter: "第七章 · 走廊",
+    speaker: "山杉惠子",
+    text: "听证会当天，我在会场外的走廊上遇见了ETO的联络人。\n他老了很多，头发全白，看见我时愣了一下。\n「三号，」他说，「任务还在。」\n我说，我知道。\n「那就把它做完。」他把一个信封塞进我手里，转身走了。\n信封里只有一张纸，写着三个词：破壁、公开、结束。\n我站在走廊尽头，看着会场的大门。门缝里漏出人声，像很远的潮水。\n两百年前我答应过他，要活着看到结局。\n现在我活着，他也活着，只是我们隔着一整个时代，和一层无法唤醒的冰。\n我把信封折好，收进口袋。",
+    choices: [
+      { label: "推门进去，找第一排的位置坐下", hint: "破壁人都坐在能被看见的地方", to: "yamasan_8a" },
+      { label: "不进去，先在走廊上把那张纸读最后一遍", hint: "有些决定，要在门外做完", to: "yamasan_8b" }
+    ]
+  },
+  yamasan_8a: {
+    chapter: "第八章 · 台上",
+    speaker: "山杉惠子",
+    text: "主持人点到我的名字时，会场有一瞬间的安静。\n我站起来，手里拿着那份名单。\n台下坐着舰队的人、殖民局的人，还有几个我一眼就能认出来的人——他们的眼神太稳了，稳得像已经想通了什么。\n我走到台前，把名单放在讲台上。\n「我叫山杉惠子。」\n「我是ETO破壁人三号。」\n我停在这里。\n按规则，破壁人要在公开场合完成指认。还差一个名字，一句话。\n会场在等。我听见自己的呼吸声。\n名单上第一个名字下面的勾，还是两百年前的笔迹。",
+    choices: [
+      { label: "说出希恩斯的名字，把一切公开", hint: "案子结了，人也就结在那一天", to: "yamasan_end_good" },
+      { label: "合上名单，说这是一次私人申诉", hint: "把刀收回去，刀柄还在自己手里", to: "yamasan_end_bad" }
+    ]
+  },
+  yamasan_8b: {
+    chapter: "第八章 · 台下",
+    speaker: "山杉惠子",
+    text: "会场坐满了人，我是最后一排最边上那个。\n名单在我膝盖上，折成四折。\n台上的人正在念钢印族的统计数据，念得很平稳，像在念一份天气预报。没有人抬头。\n我想起那些名字。他们不知道自己被写过什么，也不知道自己正在替谁排队。\n我想起他在冰里睡着，红色的叉亮着。\n我想起两百年前对自己说过的话：我不是在包庇他，我是在延长这个案子。\n现在这个案子只剩最后一句，该由我说。\n只要站起来，往前走二十米，一切就会结束。\n我把名单握紧，站了起来。",
+    choices: [
+      { label: "走到台前，接过话筒", hint: "二十米，比两百年短得多", to: "yamasan_end_good" },
+      { label: "走到门口，把名单留在座位上", hint: "有些壁，破了之后没人能活", to: "yamasan_end_bad" }
+    ]
+  },
+  yamasan_end_good: {
+    chapter: "结局 · 剖腹",
+    speaker: "山杉惠子",
+    text: "最后一次听证会，我是第四个发言的。\n「我是山杉惠子，」我说，「我是ETO破壁人三号，负责希恩斯。同时，我是他的妻子。」\n会场死一般安静。\n我把两百年前的代码、预算表、旁注全部投在屏幕上，最后说：「他给人类植入的不是智力，是绝望。他要的不是胜利，是一艘能走的船。」\n希恩斯没有出现。他的冬眠舱还在沉睡，红色的叉依然亮着。\n听证会结束后，我回到酒店房间，用一把厨刀剖腹。\n桌上留着便签：\n「我用了两百年，才确认我爱过的那个人，是个魔鬼。\n但也许，是我错了。\n因为当我坐在听证会上，看着台下那些钢印族沉默的脸，我忽然不知道，到底是希恩斯疯了，还是人类早就该相信自己必败了。」",
+    choices: []
+  },
+  yamasan_end_bad: {
+    chapter: "结局 · 沉默",
+    speaker: "山杉惠子",
+    text: "我没有在听证会上说话。\n希恩斯的计划继续推进，钢印族像种子一样散进了人类的各个角落。\n三体联络人发来最后一条消息：「你没有完成破壁任务。ETO会清剿你。」\n我关掉手机，坐在苏醒舱里等了三天。\n第三天，ETO清剿队敲门时，我已经把自己绑在了床上——希恩斯以前做动物实验时用过的束缚带，我留了两条。\n他们把我带走前，我最后看了一眼窗外的星空。\n两百年了，星星一点没变，人类也一点没变。\n还是一样怕输，一样渴望赢，一样会在最绝望的时候，把自己交给一个魔鬼。\n我破不了这个壁。\n因为这个壁，不在希恩斯身上。\n在人类自己心里。",
+    choices: []
+  }
+};
+
+/* ============================================================
+   ★★★ 第二部分：角色名单 —— 选角页的8个身份 ★★★
+   playable: true 表示这条线已经做好可以玩；false 表示待填充。
+   line 填该角色剧情的第一个场景名字；待填充的留 null。
+   ============================================================ */
+
+/* 角色立绘：选角卡低透明度背景 + 故事页右下角；name 为选角卡名字UI图 */
+const PORTRAITS = {
+  luoji:  { img:"assets/luoji.png",  name:"assets/luoji-name.png",  alt:"罗辑" },
+  taylor: { img:"assets/taylor.png", name:"assets/taylor-name.png", alt:"泰勒" },
+  reidiaz:{ img:"assets/reidiaz.png", name:"assets/reidiaz-name.png", alt:"雷迪亚兹" },
+  hines:  { img:"assets/hines.png",  name:"assets/hines-name.png",  alt:"希恩斯" },
+  vonneumann:{ img:"assets/vonneumann.png", name:"assets/vonneumann-name.png", alt:"冯·诺依曼" },
+  mozi:   { img:"assets/mozi.png", name:"assets/mozi-name.png", alt:"墨子" },
+  yamazaki:{ img:"assets/yamazaki.png", name:"assets/yamazaki-name.png", alt:"山杉惠子" },
+  self:   { img:"assets/luoji.png", name:"assets/luoji-self-name.png", alt:"罗辑（自破）" }
+};
+/* 剧情场景前缀 → 立绘角色 */
+function scenePortrait(sceneId){
+  if(sceneId.startsWith("luoji_") && !sceneId.startsWith("luoji_wb_")) return "luoji";
+  if(sceneId.startsWith("taylor_")) return "taylor";
+  if(sceneId.startsWith("reidiaz_")) return "reidiaz";
+  if(sceneId.startsWith("hines_")) return "hines";
+  if(sceneId.startsWith("breaker_01_")) return "vonneumann";
+  if(sceneId.startsWith("breaker_02_")) return "mozi";
+  if(sceneId.startsWith("yamasan_")) return "yamazaki";
+  if(sceneId.startsWith("luoji_wb_")) return "self";
+  return null;
+}
+/* 破壁人线（含山杉惠子线、罗辑自破线）的说话人标签用破壁人的暗红色 */
+function speakerIsBreaker(sceneId){
+  return sceneId.startsWith("breaker_01_") || sceneId.startsWith("breaker_02_")
+      || sceneId.startsWith("yamasan_") || sceneId.startsWith("luoji_wb_");
+}
+
+const ROLES = [
+  { id:"taylor",  name:"弗雷德里克·泰勒", side:"face",    no:"面壁者1号", line:"taylor_1", playable:true,
+    brief:"美国前国防部长，图谋球状闪电量子幽灵舰队。" },
+  { id:"reidiaz", name:"曼努尔·雷迪亚兹", side:"face",    no:"面壁者2号", line:"reidiaz_1", playable:true,
+    brief:"委内瑞拉总统，以恒星级氢弹与水星坠落为筹码。" },
+  { id:"hines",   name:"比尔·希恩斯",     side:"face",    no:"面壁者3号", line:"hines_1", playable:true,
+    brief:"英国脑科学家，主导思想钢印计划。" },
+  { id:"luoji",   name:"罗辑",            side:"face",    no:"面壁者4号", line:"luoji_1", playable:true,
+    brief:"研究宇宙社会学的学者，表面无所作为，实则是唯一看清黑暗森林的人。" },
+
+  { id:"vonneumann", name:"冯·诺依曼",     side:"breaker", no:"泰勒的破壁人", line:"breaker_01_1", playable:true,
+    brief:"你是泰勒的破壁人，从舰队配置里拆穿量子幽灵舰队的自相矛盾。" },
+  { id:"mozi",       name:"墨子",          side:"breaker", no:"雷迪亚兹的破壁人", line:"breaker_02_1", playable:true,
+    brief:"你是雷迪亚兹的破壁人，用钻探深度与核弹当量戳破水星坠日的数字骗局。" },
+  { id:"yamazaki",   name:"山杉惠子",     side:"breaker", no:"希恩斯的破壁人", line:"yamasan_1", playable:true,
+    brief:"你是希恩斯的妻子，也是他的破壁人，从实验记录与预算里拆穿思想钢印。" },
+  { id:"self",       name:"罗辑（自破）", side:"breaker", no:"第四位破壁人", line:"luoji_wb_1", playable:true,
+    brief:"你就是罗辑本人：这一次没有 ETO 派来的破壁人，拆开这面壁的，是你自己。" }
+];
+
+/* ============================================================
+   ★★★ 第三部分：人物资料库 —— 这就是未来知识图谱的“节点和边” ★★★
+   每个对象是一个“节点”；relations 里的 target 就是相连的另一个“节点”。
+   以后接入知识图谱（ECharts 关系图）时，直接把这组数据转成图的点和线即可。
+   ============================================================ */
+
+const CHARACTERS = [
+  { name:"罗辑", side:"face", role:"面壁者4号",
+    desc:"宇宙社会学学者，由叶文洁的两条公理推导出黑暗森林法则，最终成为执剑人。",
+    relations:[
+      { target:"叶文洁", type:"传授宇宙社会学（杨冬墓前）" },
+      { target:"萨伊", type:"被任命为面壁者" },
+      { target:"罗辑（自破）", type:"破壁人即他自己" }
+    ]},
+  { name:"弗雷德里克·泰勒", side:"face", role:"面壁者1号",
+    desc:"美国前国防部长，试图用球状闪电组建量子态幽灵舰队，让士兵死后继续作战。",
+    relations:[
+      { target:"冯·诺依曼", type:"被其破壁：量子态士兵不存在忠诚" }
+    ]},
+  { name:"曼努尔·雷迪亚兹", side:"face", role:"面壁者2号",
+    desc:"委内瑞拉总统，研发恒星级氢弹，计划在水星引爆，以同归于尽要挟三体与世界。",
+    relations:[
+      { target:"墨子", type:"被其破壁：他真正要挟的是全人类" }
+    ]},
+  { name:"比尔·希恩斯", side:"face", role:"面壁者3号",
+    desc:"英国脑科学家，借提升人类智力之名，实施思想钢印，向人脑中植入信念。",
+    relations:[
+      { target:"山杉惠子", type:"夫妻，亦被其破壁" }
+    ]},
+  { name:"冯·诺依曼", side:"breaker", role:"泰勒的破壁人",
+    desc:"数学家形象登场，用“三人玩游戏”的比喻一层层拆穿泰勒计划的自相矛盾。",
+    relations:[
+      { target:"弗雷德里克·泰勒", type:"当面破壁" }
+    ]},
+  { name:"墨子", side:"breaker", role:"雷迪亚兹的破壁人",
+    desc:"以墨家式天体模拟为外衣，揭穿雷迪亚兹的真实战略。",
+    relations:[
+      { target:"曼努尔·雷迪亚兹", type:"当面破壁" }
+    ]},
+  { name:"山杉惠子", side:"breaker", role:"希恩斯的破壁人",
+    desc:"希恩斯的日本妻子，脑科学家，思想钢印的共同设计者，掌握钢印的真实方向。",
+    relations:[
+      { target:"比尔·希恩斯", type:"夫妻 / 当面破壁" }
+    ]},
+  { name:"萨伊", side:"face", role:"联合国秘书长",
+    desc:"在联大宣布四位面壁者的任命，面壁计划的推动者。",
+    relations:[
+      { target:"罗辑", type:"任命" }
+    ]},
+  { name:"叶文洁", side:"face", role:"天体物理学家",
+    desc:"杨冬之母，在杨冬墓前向罗辑讲述宇宙社会学两条公理，是黑暗森林理论的源头。",
+    relations:[
+      { target:"罗辑", type:"传授公理" }
+    ]}
+];
+
+/* ============================================================
+   ★★★ 第四部分：引擎 —— 负责把上面的数据渲染成页面，一般不用改 ★★★
+   ============================================================ */
+
+const app = document.getElementById("app");
+let currentScene = null;
+
+/* —— 首页 —— */
+function renderHome(){
+  app.innerHTML = `
+    <div class="home">
+      <div class="kicker">三体 · 同人互动小说</div>
+      <img class="title-img" src="assets/title.png" alt="面壁">
+      <p class="sub">你的思想即是战场。选择成为隐藏战略的面壁者，或看穿一切的破壁人。
+      每一次选择，都通向不同的结局。</p>
+      <button class="ui-btn" onclick="location.hash='#select'"><img src="assets/btn-start.png" alt="开始游戏"></button>
+      <button class="ui-btn" onclick="location.hash='#archive'"><img src="assets/btn-graph.png" alt="《三体》知识图谱"></button>
+      <div class="save-dock">
+        <button class="save-tab" id="saveTab"
+          onmouseenter="openSavePanel(this,false)" onmouseleave="scheduleSaveClose()"
+          onclick="toggleSavePanel(this)" title="悬停查看存档，点击钉住面板">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 4h12l4 4v12H4z"/><path d="M8 4v6h6V4"/><path d="M8 20v-6h8v6"/></svg>
+          存 档 <span class="save-n" id="saveCount">${savesCount() ? savesCount() + " / 4" : "空"}</span>
+        </button>
+      </div>
+      <div class="foot">非商业学习用途 · 原著：刘慈欣《三体》 · 网页作者：何思远 · 立绘形象参考：《三体》动画 · BGM：《THREE BODY》</div>
+    </div>`;
+}
+
+/* —— 选角页 —— */
+/* 剧情线达成进度：记录已抵达的结局节点，存在本机 localStorage 里 */
+const ENDINGS_KEY = "santi_endings_v1";
+function endingsDone(){
+  try{ return new Set(JSON.parse(localStorage.getItem(ENDINGS_KEY) || "[]")); }
+  catch(e){ return new Set(); }
+}
+function markEnding(id){
+  const sc = STORY[id];
+  if(!sc || (sc.choices || []).length) return;   // 只认结局节点（choices 为空）
+  const done = endingsDone();
+  if(done.has(id)) return;
+  done.add(id);
+  try{ localStorage.setItem(ENDINGS_KEY, JSON.stringify([...done])); }catch(e){}
+  notifyAchievements();   // 刚好集满某个角色/全部角色时弹出成就卡
+}
+/* 某个角色的剧情线结局：按该角色的入口节点前缀取，罗辑主线不吞自破线 */
+function roleEndings(r){
+  const pre = String(r.line || "").replace(/_1$/, "_");
+  return Object.keys(STORY).filter(id=>{
+    if(!id.startsWith(pre)) return false;
+    if(pre === "luoji_" && id.startsWith("luoji_wb_")) return false;
+    return !(STORY[id].choices || []).length;
+  }).sort((a,b)=>{
+    const ra = a.endsWith("_good") ? 0 : 1, rb = b.endsWith("_good") ? 0 : 1;
+    return ra - rb || a.localeCompare(b);
+  });
+}
+/* 全部结局节点（即 16 条剧情线的终点），用于总进度 */
+function allEndingIds(){
+  return Object.keys(STORY).filter(id => !(STORY[id].choices || []).length);
+}
+/* 清空达成记录（只清本机的结局进度与成就解锁记录，不动剧情本身） */
+function clearEndings(){
+  try{ localStorage.removeItem(ENDINGS_KEY); }catch(e){}
+  try{ localStorage.removeItem(ACH_SEEN_KEY); }catch(e){}
+  renderSelect();
+}
+
+/* —— 成就 —— 
+   每个角色一条成就：该角色两条剧情线的结局全部走到即解锁；
+   最后一条「全收集」需要 16 个结局全部走到。 */
+const ACH_SEEN_KEY = "santi_ach_seen_v1";
+const ACH_ICONS = {
+ship:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 16.5h16l-2.6 3H6.6z"/><path d="M12 3.8 15.3 11.4H8.7z"/><path d="M12 11.4v5"/><path d="M6.2 20.4h11.6"/></svg>',
+sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="3.9"/><path d="M12 3.4v2.6M12 18v2.6M3.4 12H6M18 12h2.6M5.9 5.9l1.9 1.9M16.2 16.2l1.9 1.9M18.1 5.9l-1.9 1.9M7.8 16.2l-1.9 1.9"/></svg>',
+stamp:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M5.2 20.4h13.6"/><path d="M8.8 17h6.4c-.2-1.5.9-2.2.9-3.7V8.6a4 4 0 0 0-8 0v4.7c0 1.5 1.1 2.2.7 3.7z"/><path d="M10.2 8.9h3.6"/></svg>',
+forest:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4.2 17.6 7 10.4l2.8 7.2z"/><path d="M11.4 17.6 14 11l2.6 6.6z"/><circle cx="18.6" cy="5.2" r="1.1"/><circle cx="5.6" cy="4.4" r=".8"/><path d="M7 17.6v2.4M14 17.6v2.4"/></svg>',
+dead:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 12.4h3.6l1.9-4.2 2.4 8.4 1.9-4.2h2.6"/><path d="M17.4 7.4l3.8 3.8M21.2 7.4l-3.8 3.8"/></svg>',
+eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 4.4 20 19H4z"/><circle cx="12" cy="13.4" r="2.4"/></svg>',
+hourglass:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.6 4.4h10.8M6.6 19.6h10.8"/><path d="M7.8 4.4c0 4.4 4.2 5.2 4.2 7.6s-4.2 3.2-4.2 7.6"/><path d="M16.2 4.4c0 4.4-4.2 5.2-4.2 7.6s4.2 3.2 4.2 7.6"/><path d="M10.6 16.6h2.8"/></svg>',
+wall:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 7h16v10H4z"/><path d="M4 12h16"/><path d="M9 7v5M15 7v5M7 12v5M12 12v5M17 12v5"/><path d="M13.4 8.6l1.6 2.4-2 2 1.6 2.4"/></svg>',
+orbit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="7.6" r="4"/><circle cx="8.4" cy="14.2" r="3.4"/><circle cx="15.6" cy="14.2" r="3.4"/></svg>'
+};
+const ACHIEVEMENTS = [
+  {id:"ach_taylor",  roleId:"taylor",     group:"face",    who:"泰勒",                      name:"幽灵舰队",              icon:ACH_ICONS.ship,
+   desc:"达成「幽灵舰队」与「破壁之后」两个结局", bg:"assets/ach-taylor.png"},
+  {id:"ach_reidiaz", roleId:"reidiaz",    group:"face",    who:"雷迪亚兹",                  name:"一百零七万枚太阳",        icon:ACH_ICONS.sun,
+   desc:"达成「偏移」与「石头」两个结局", bg:"assets/ach-reidiaz.png"},
+  {id:"ach_hines",   roleId:"hines",      group:"face",    who:"希恩斯",                    name:"「思想钢印」",            icon:ACH_ICONS.stamp,
+   desc:"达成「火种」与「冰面破裂」两个结局", bg:"assets/ach-hines.png"},
+  {id:"ach_luoji",   roleId:"luoji",      group:"face",    who:"罗辑",                      name:"「黑暗森林」",            icon:ACH_ICONS.forest,
+   desc:"达成「执剑」与「犹豫」两个结局", bg:"assets/ach-luoji.png"},
+  {id:"ach_vn",      roleId:"vonneumann", group:"breaker", who:"破壁人一号 · 冯·诺依曼",    name:"无法被指挥的死者",        icon:ACH_ICONS.dead,
+   desc:"达成「破壁成功」与「打草惊蛇」两个结局", bg:"assets/ach-vn.png"},
+  {id:"ach_mozi",    roleId:"mozi",       group:"breaker", who:"破壁人二号 · 墨子",         name:"「主不在乎」",            icon:ACH_ICONS.eye,
+   desc:"达成「破壁」与「反噬」两个结局", bg:"assets/ach-mozi.png"},
+  {id:"ach_yamasan", roleId:"yamazaki",   group:"breaker", who:"山杉惠子",                  name:"两百年后的证词",          icon:ACH_ICONS.hourglass,
+   desc:"达成「剖腹」与「沉默」两个结局", bg:"assets/ach-yamazaki.png"},
+  {id:"ach_self",    roleId:"self",       group:"breaker", who:"罗辑 · 破壁人视角",         name:"破不了的壁",              icon:ACH_ICONS.wall,
+   desc:"达成「自破其壁」与「没有破壁人」两个结局", bg:"assets/ach-self.png"},
+  {id:"ach_all",     roleId:null,         group:"all",     who:"全部角色",                  name:"「这是计划的一部分」",
+   desc:"达成所有面壁者与破壁人的全部剧情线", icon:ACH_ICONS.orbit, bg:"assets/ach-all.png", final:true}
+];
+/* 某个角色的两条结局是否都已走到 */
+function roleAllDone(roleId){
+  const r = ROLES.find(x=>x.id === roleId);
+  if(!r) return false;
+  const ends = roleEndings(r);
+  if(!ends.length) return false;
+  const done = endingsDone();
+  return ends.every(id=>done.has(id));
+}
+/* 当前已解锁的成就（按达成情况实时计算，不额外存状态） */
+function unlockedAch(){
+  const done = endingsDone();
+  const allDone = allEndingIds().every(id=>done.has(id));
+  return ACHIEVEMENTS.filter(a=>{
+    if(a.final) return allDone;
+    return roleAllDone(a.roleId);
+  });
+}
+function achSeen(){
+  try{ return new Set(JSON.parse(localStorage.getItem(ACH_SEEN_KEY) || "[]")); }
+  catch(e){ return new Set(); }
+}
+/* 成就卡（面板与弹窗共用一套 DOM） */
+function achCardHTML(a, on){
+  return `<div class="ach-card ${on?"on":""} ${a.final?"final":""}" ${a.bg?`style="--achbg:url('${a.bg}')"`:""}>
+    ${a.bg?'<span class="ach-bg"></span>':''}
+    <span class="ach-icon">${a.icon}</span>
+    <span class="ach-meta">
+      <span class="ach-who">${a.who}</span>
+      <span class="ach-name">${a.name}</span>
+      ${a.desc?`<span class="ach-desc">${a.desc}</span>`:""}
+    </span>
+    <span class="ach-state">${on?"已解锁":"未解锁"}</span>
+  </div>`;
+}
+function achBodyHTML(){
+  const un = new Set(unlockedAch().map(a=>a.id));
+  const grid = list => `<div class="ach-grid">${list.map(a=>achCardHTML(a, un.has(a.id))).join("")}</div>`;
+  const face = ACHIEVEMENTS.filter(a=>a.group==="face");
+  const brk = ACHIEVEMENTS.filter(a=>a.group==="breaker");
+  const fin = ACHIEVEMENTS.filter(a=>a.group==="all");
+  return `<div class="ach-group"><div class="ach-gt">面壁者线</div>${grid(face)}</div>
+    <div class="ach-group"><div class="ach-gt">破壁人线</div>${grid(brk)}</div>
+    <div class="ach-group"><div class="ach-gt">全收集</div>${grid(fin)}</div>`;
+}
+/* 底部弹出成就提示卡（约 5 秒后自动收起） */
+let achToastTimer = null;
+function showAchToast(a){
+  let box = document.getElementById("achToast");
+  if(!box){
+    box = document.createElement("div");
+    box.id = "achToast";
+    box.className = "ach-toast";
+    document.body.appendChild(box);
+  }
+  box.innerHTML = `<div class="toast-cap">成 就 解 锁</div>${achCardHTML(a, true)}`;
+  void box.offsetWidth;
+  box.classList.add("show");
+  if(achToastTimer) clearTimeout(achToastTimer);
+  achToastTimer = setTimeout(()=>box.classList.remove("show"), 5200);
+}
+/* 走到结局后检查：新解锁的成就弹一次，记录已提示过的不再重复 */
+function notifyAchievements(){
+  const un = unlockedAch();
+  const seen = achSeen();
+  const fresh = un.filter(a=>!seen.has(a.id));
+  if(!fresh.length) return;
+  fresh.forEach(a=>seen.add(a.id));
+  try{ localStorage.setItem(ACH_SEEN_KEY, JSON.stringify([...seen])); }catch(e){}
+  fresh.forEach((a,i)=> setTimeout(()=>showAchToast(a), i*5600));
+}
+
+function renderSelect(){
+  const faces = ROLES.filter(r=>r.side==="face");
+  const breakers = ROLES.filter(r=>r.side==="breaker");
+  const done = endingsDone();
+  const allEnds = allEndingIds();
+  const doneCount = allEnds.filter(id=>done.has(id)).length;
+  const pct = allEnds.length ? Math.round(doneCount / allEnds.length * 100) : 0;
+  const cell = r => {
+    const p = PORTRAITS[r.id];
+    const ends = roleEndings(r);
+    const okCount = ends.filter(id=>done.has(id)).length;
+    return `
+    <div class="role-cell">
+      <div class="role-card ${r.side} ${p?"portrait-card":""} ${r.playable?"":"locked"}"
+           ${p?`style="--portrait:url('${p.img}')"`:``}
+           onclick="${r.playable ? `startRole('${r.line}')` : ``}">
+        <div class="no">${r.no}</div>
+        ${p ? `<img class="name-img" src="${p.name}" alt="${p.alt}">` : `<div class="name">${r.name}</div>`}
+        <div class="brief">${r.brief}</div>
+      </div>
+      <div class="line-panel ${r.side}">
+        <div class="lp-title"><span>剧情线达成</span><span class="lp-count">${okCount}/${ends.length}</span></div>
+        ${ends.map(id=>{
+          const ok = done.has(id);
+          return `<div class="lp-item ${ok?"done":""}">
+            <span class="lp-name">${STORY[id].chapter || id}</span>
+            <span class="lp-badge ${ok?"done":""}">${ok?"已达成":"待达成"}</span>
+          </div>`;
+        }).join("")}
+      </div>
+    </div>`;
+  };
+  app.innerHTML = `
+    <div class="story-head">
+      <span class="chapter">选择你的身份</span>
+      <span class="back" onclick="location.hash='#home'">返回首页</span>
+    </div>
+    <div class="section-title">面壁者 · 隐藏思想的人</div>
+    <div class="role-grid">${faces.map(cell).join("")}</div>
+    <div class="section-title breaker">破壁人 · 看穿一切的人</div>
+    <div class="role-grid">${breakers.map(cell).join("")}</div>
+
+    <div class="ach-panel">
+      <div class="ach-head">
+        <div class="ach-bar-wrap">
+          <span class="ach-label">总进度</span>
+          <div class="ach-bar"><div class="ach-fill" id="achFill" style="width:${pct}%"></div></div>
+          <span class="ach-pct" id="achPct">${pct}%</span>
+        </div>
+        <button class="ach-clear" onclick="clearEndings()">清空达成记录</button>
+      </div>
+      <div class="ach-body" id="achBody">${achBodyHTML()}</div>
+    </div>`;
+}
+
+/* —— 剧情页 —— */
+function startRole(sceneId){
+  location.hash = "#story/" + sceneId;
+}
+
+function renderStory(sceneId){
+  const s = STORY[sceneId];
+  if(!s){ app.innerHTML = `<p>找不到场景「${sceneId}」，检查 STORY 里是否拼错了名字。
+    <button class="btn ghost" onclick="location.hash='#select'">返回选角</button></p>`; return; }
+  currentScene = s;
+  markEnding(sceneId);   // 走到结局节点就记入达成进度
+  /* 章节路径：正常前进就压栈；按「返回上一章」跳回来时只出栈、不再压栈 */
+  if(storyBacking){
+    storyBacking = false;
+  }else{
+    const lastId = storyHist[storyHist.length-1];
+    if(lastId && roleOfNode(lastId) !== roleOfNode(sceneId)) storyHist = [];  // 换到另一个角色线，路径重开
+    if(lastId !== sceneId) storyHist.push(sceneId);
+  }
+  currentStoryId = sceneId;
+  autoSave(sceneId);     // 每进一章都刷新「自动存档」，关掉网页也不会丢
+  const pk = scenePortrait(sceneId);
+  const showPortrait = !!pk;
+  let prevId = storyHist.length > 1 ? storyHist[storyHist.length-2] : null;
+  if(!prevId) prevId = prevNodeOf(sceneId);   // 读档/直接跳进来时，按剧情图倒推上一章
+  const prevChapter = prevId && STORY[prevId] ? STORY[prevId].chapter : "";
+  app.innerHTML = `
+    <div class="story-head">
+      <span class="chapter">${s.chapter||""}</span>
+      <span class="back" onclick="location.hash='#select'">重新选择角色</span>
+    </div>
+    <div class="speaker ${speakerIsBreaker(sceneId)?"breaker":""}">${s.speaker||""}</div>
+    <div class="skip-row">
+      <button class="skip-btn save-open" id="saveOpenBtn" onclick="toggleSavePanel(this)">存档</button>
+      <button class="skip-btn" id="skipBtn" onclick="skipTyping()">跳过</button>
+    </div>
+    <div class="story-text${showPortrait?" portrait-text":""}" id="storyText"></div>
+    <div class="choices" id="choices" style="visibility:hidden"></div>
+    <div class="story-back-row" id="backRow" style="visibility:hidden">
+      <button class="story-back"${prevId?"":' disabled'} title="${prevId ? "返回「"+prevChapter+"」" : "已经是本章开头"}" onclick="storyGoBack()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5 8 12l7 7"/></svg>上一章
+      </button>
+    </div>
+    ${showPortrait ? `<img class="portrait" src="${PORTRAITS[pk].img}" alt="${PORTRAITS[pk].alt}">` : ""}`;
+  typewriter(s.text, ()=>showChoices(s));
+}
+
+/* —— 逐字展示时的打字声：开始出字就响，文字铺完或按下「跳过」立刻停 —— */
+const TYPE_SFX_VOL = 0.3;
+let typeAudio = null, typeRunning = false;
+function typeSfxAudio(){
+  if(!typeAudio){
+    typeAudio = new Audio("assets/type.mp3");
+    typeAudio.loop = true;
+    typeAudio.preload = "auto";
+    typeAudio.volume = TYPE_SFX_VOL;
+  }
+  return typeAudio;
+}
+function typeSfxStart(){
+  const a = typeSfxAudio();
+  typeRunning = true;
+  try{ a.currentTime = 0; a.play().catch(()=>{}); }catch(e){}
+}
+function typeSfxStop(){
+  typeRunning = false;
+  if(!typeAudio) return;
+  try{ typeAudio.pause(); typeAudio.currentTime = 0; }catch(e){}
+}
+/* 若首次被浏览器拦了自动播放，下一次点击时补上 */
+document.addEventListener("pointerdown", function(){
+  if(typeRunning && typeAudio && typeAudio.paused){
+    try{ typeAudio.play().catch(()=>{}); }catch(e){}
+  }
+}, true);
+
+/* 简单打字机效果，不想用可以删掉，直接把 text 写进去 */
+let typeTimer = null, typeDone = null, typeText = "";
+function typewriter(text, done){
+  const el = document.getElementById("storyText");
+  typeText = text; typeDone = done; let i = 0;
+  if(typeTimer){ clearInterval(typeTimer); typeTimer = null; }
+  el.innerHTML = "";
+  typeSfxStart();
+  typeTimer = setInterval(()=>{
+    el.innerHTML = text.slice(0, ++i) + '<span class="cursor">▍</span>';
+    if(i >= text.length) finishTyping();
+  }, 28);
+}
+/* 一次性把整段文字铺满，并立刻放行选项（供「跳过」使用） */
+function finishTyping(){
+  if(typeTimer){ clearInterval(typeTimer); typeTimer = null; }
+  typeSfxStop();
+  const el = document.getElementById("storyText");
+  if(el) el.innerHTML = typeText;
+  const btn = document.getElementById("skipBtn");
+  if(btn) btn.classList.add("is-done");
+  const d = typeDone; typeDone = null;
+  if(d) d();
+}
+function skipTyping(){ finishTyping(); }
+
+/* 从剧情图倒推上一章：谁的选择能走到这一章，就回那一章（同一角色线优先） */
+function prevNodeOf(id){
+  const role = roleOfNode(id);
+  let other = null;
+  for(const k in STORY){
+    if(k === id) continue;
+    const s = STORY[k];
+    if(!s || !s.choices || !s.choices.length) continue;
+    if(s.choices.some(c => c && c.to === id)){
+      if(roleOfNode(k) === role) return k;
+      if(!other) other = k;
+    }
+  }
+  return other;
+}
+
+/* 返回上一章：沿刚才走过的章节路径退一步；读档进来没有路径时，按剧情图倒推 */
+function storyGoBack(){
+  const cur = currentStoryId || (location.hash.split("/")[1] || "");
+  let prev = null;
+  if(storyHist.length >= 2){
+    storyHist.pop();
+    prev = storyHist[storyHist.length-1];
+  }else{
+    prev = prevNodeOf(cur);
+    if(prev) storyHist = [prev];
+  }
+  if(!prev || prev === cur) return;
+  storyBacking = true;              // 这次跳转不再压栈
+  const target = "#story/" + prev;
+  if(location.hash === target){ storyBacking = false; renderStory(prev); return; }
+  location.hash = target;
+}
+
+function showChoices(s){
+  const box = document.getElementById("choices");
+  box.style.visibility = "visible";
+  const row = document.getElementById("backRow");
+  if(row) row.style.visibility = "visible";   // 「上一章」和选项一起出现，避免选项插入时按钮跳位
+  if(!s.choices || s.choices.length === 0){
+    box.innerHTML = `<div class="ending">— 本线结局 —</div>
+      <button class="btn" onclick="location.hash='#select'">回到选角页</button>
+      <button class="btn ghost" onclick="location.hash='#home'">回到首页</button>`;
+    return;
+  }
+  box.innerHTML = s.choices.map(c=>`
+    <button class="choice-btn" onclick="location.hash='#story/${c.to}'">
+      ${c.label}
+      ${c.hint ? `<span class="hint">${c.hint}</span>` : ""}
+    </button>`).join("");
+}
+
+/* —— 资料库页：内嵌「完整版」知识图谱（纯静态，随站点一起分发，无需本机服务） —— */
+const KG_PAGE = "assets/kg/index.html";
+
+function renderArchive(){
+  app.innerHTML = `
+    <div class="story-head">
+      <span class="chapter">《三体》知识图谱</span>
+      <span class="back kg-back" onclick="location.hash='#home'">返回首页</span>
+    </div>
+    <div class="kg-frame-wrap" id="kg-frame-wrap">
+      <div class="kg-loading">正在加载知识图谱…</div>
+    </div>
+    <span class="kg-open" onclick="window.open('${KG_PAGE}','_blank')">新窗口打开完整版</span>`;
+  mountKg();
+}
+
+function mountKg(){
+  const wrap = document.getElementById("kg-frame-wrap");
+  if(!wrap) return;
+  wrap.innerHTML = `<iframe id="kg-frame" src="${KG_PAGE}?embed=1" title="《三体》知识图谱"></iframe>`;
+}
+
+/* ============================================================
+   —— 存档：一个自动槽 + 三个手动槽，全部存在本机 localStorage ——
+   存档只记「当前章节节点」，读档就是把 hash 跳回那一章；
+   所以读档后看到的正文、选项和你当时看到的一模一样。
+   ============================================================ */
+const SAVE_KEY = "santi_saves_v1";
+const SAVE_SLOTS = [
+  {id:"auto", label:"自动",   kind:"auto"},
+  {id:"m1",   label:"存档 1", kind:"manual"},
+  {id:"m2",   label:"存档 2", kind:"manual"},
+  {id:"m3",   label:"存档 3", kind:"manual"}
+];
+let currentStoryId = null;
+/* 本次游玩的章节路径，用于左下角「返回上一章」 */
+let storyHist = [], storyBacking = false;
+
+/* 节点前缀 → 角色名（与立绘映射同一套前缀） */
+function roleOfNode(id){
+  const map = [
+    ["luoji_wb_",   "罗辑（自破）"],
+    ["luoji_",      "罗辑"],
+    ["taylor_",     "泰勒"],
+    ["reidiaz_",    "雷迪亚兹"],
+    ["hines_",      "希恩斯"],
+    ["breaker_01_", "破壁人一号"],
+    ["breaker_02_", "破壁人二号"],
+    ["yamasan_",    "山杉惠子"]
+  ];
+  for(const [pre, name] of map){ if(id.startsWith(pre)) return name; }
+  return "未知角色";
+}
+function savesRead(){
+  try{
+    const o = JSON.parse(localStorage.getItem(SAVE_KEY) || "{}");
+    return (o && typeof o === "object" && !Array.isArray(o)) ? o : {};
+  }catch(e){ return {}; }
+}
+function savesWrite(o){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(o)); }catch(e){} }
+function savesCount(){
+  const all = savesRead();
+  return SAVE_SLOTS.filter(s=>all[s.id]).length;
+}
+/* 写入某个槽：node=章节节点 id，mode=manual/auto */
+function writeSave(slotId, nodeId, mode){
+  const sc = STORY[nodeId];
+  if(!sc || !SAVE_SLOTS.some(s=>s.id === slotId)) return null;
+  const all = savesRead();
+  all[slotId] = {
+    node: nodeId,
+    role: roleOfNode(nodeId),
+    chapter: sc.chapter || "",
+    mode: mode,
+    t: Date.now()
+  };
+  savesWrite(all);
+  return all[slotId];
+}
+/* 自动存档：每进一章覆盖自动槽；关闭网页时再刷一次时间 */
+function autoSave(nodeId){
+  if(!nodeId || !STORY[nodeId]) return;
+  writeSave("auto", nodeId, "auto");
+  refreshSaveTab();
+}
+function fmtSaveTime(t){
+  const d = new Date(t), p = n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function inStoryPage(){ return location.hash.startsWith("#story/"); }
+
+/* —— 首页「存档」键上的小计数 —— */
+function refreshSaveTab(){
+  const el = document.getElementById("saveCount");
+  if(!el) return;
+  const n = savesCount();
+  el.textContent = n ? n + " / 4" : "空";
+}
+
+/* —— 面板开合 —— */
+let saveAnchorEl = null, savePinned = false, saveCloseTimer = null, saveHideTimer = null, saveAnimTimer = null, saveMsg = "", saveMsgTimer = null;
+function cancelSaveHide(){ clearTimeout(saveHideTimer); saveHideTimer = null; }
+function openSavePanel(anchor, pin){
+  const stage = document.getElementById("saveStage");
+  const panel = document.getElementById("savePanel");
+  if(!stage || !panel) return;
+  if(anchor) saveAnchorEl = anchor;
+  if(pin) savePinned = true;   // 只有点击才钉住，悬停只是临时展开
+  cancelSaveClose();
+  cancelSaveHide();
+  stage.hidden = false;
+  panel.classList.remove("is-closing");
+  document.querySelectorAll(".save-tab,.save-open").forEach(el=>el.classList.remove("is-open"));
+  if(saveAnchorEl && saveAnchorEl.classList) saveAnchorEl.classList.add("is-open");
+  renderSavePanel();
+  positionSavePanel();
+  /* 重放一次「展开」特效：先摘掉类名并强制回流，否则连续展开时动画不会重播 */
+  panel.classList.remove("is-opening");
+  void panel.offsetWidth;
+  panel.classList.add("is-opening");
+  clearTimeout(saveAnimTimer);
+  saveAnimTimer = setTimeout(function(){ panel.classList.remove("is-opening"); }, 600);  // 兜底：动画事件漏掉也能恢复常态
+}
+/* 点一下「存档」键：开着就收起，关着就钉住展开 */
+function toggleSavePanel(anchor){
+  const stage = document.getElementById("saveStage");
+  if(stage && !stage.hidden && saveAnchorEl === anchor){ closeSavePanel(); return; }
+  openSavePanel(anchor, true);
+}
+function closeSavePanel(instant){
+  cancelSaveClose();
+  const stage = document.getElementById("saveStage");
+  const panel = document.getElementById("savePanel");
+  document.querySelectorAll(".save-tab,.save-open").forEach(el=>el.classList.remove("is-open"));
+  savePinned = false;
+  saveMsg = "";
+  if(!stage) return;
+  if(instant || !panel || stage.hidden){
+    cancelSaveHide();
+    stage.hidden = true;
+    if(panel){ panel.classList.remove("is-opening", "is-closing"); }
+    return;
+  }
+  /* 正常收起：先播收束动画，播完再真正隐藏 */
+  panel.classList.remove("is-opening");
+  panel.classList.add("is-closing");
+  cancelSaveHide();
+  saveHideTimer = setTimeout(function(){
+    stage.hidden = true;
+    panel.classList.remove("is-closing");
+    saveHideTimer = null;
+  }, 230);
+}
+function scheduleSaveClose(){
+  /* 悬停展开时，指针离开「存档」键和面板后收起；点击钉住的则不动 */
+  if(savePinned) return;
+  clearTimeout(saveCloseTimer);
+  saveCloseTimer = setTimeout(closeSavePanel, 300);
+}
+function cancelSaveClose(){ clearTimeout(saveCloseTimer); }
+
+/* 面板本身也参与悬停判断：指针从「存档」键挪进面板时，这 300ms 内不会被收掉；
+   面板整层遮罩不再拦截指针，所以离开按键是真的离开，不会再来回闪。 */
+(function(){
+  const panel = document.getElementById("savePanel");
+  if(!panel) return;
+  panel.addEventListener("mouseenter", cancelSaveClose);
+  panel.addEventListener("mouseleave", function(){ if(!savePinned) scheduleSaveClose(); });
+  /* 展开动画播完就摘掉类名，之后再刷新面板内容不会重播 */
+  panel.addEventListener("animationend", function(e){
+    if(e.target === panel && e.animationName === "savePanelIn") panel.classList.remove("is-opening");
+  });
+})();
+
+/* 面板贴着触发键：首页的「存档」键在按钮组下方，优先向上展开，不去挡开始游戏；
+   剧情页的「存档」键在正文右上，优先向下展开。放不下再翻向另一边，并夹在视口里。 */
+function positionSavePanel(){
+  const panel = document.getElementById("savePanel");
+  const a = saveAnchorEl;
+  if(!panel || !a || !a.getBoundingClientRect) return;
+  const r = a.getBoundingClientRect();
+  const pw = panel.offsetWidth, ph = panel.offsetHeight;
+  if(!pw || !ph) return;
+  let left = r.left + r.width/2 - pw/2;
+  left = Math.max(12, Math.min(left, window.innerWidth - pw - 12));
+
+  const preferUp = !!(a.classList && a.classList.contains("save-tab"));
+  let top = preferUp ? r.top - ph - 10 : r.bottom + 10;
+  if(preferUp && top < 12) top = r.bottom + 10;
+  if(!preferUp && top + ph > window.innerHeight - 12) top = r.top - ph - 10;
+  top = Math.max(12, Math.min(top, window.innerHeight - ph - 12));
+
+  panel.style.left = left + "px";
+  panel.style.top = top + "px";
+  /* 动画从贴着触发键的那一侧长出来：首页向上展开→原点在底边；剧情页向下展开→原点在顶边 */
+  panel.style.transformOrigin = preferUp && top + ph <= r.top ? "50% 100%" : "50% 0%";
+}
+
+/* —— 面板内容 —— */
+function slotRowHTML(slot){
+  const e = savesRead()[slot.id];
+  if(!e){
+    const canSave = slot.kind === "manual" && inStoryPage();
+    return `<div class="save-row">
+      <span class="save-tag ${slot.kind}">${slot.label}</span>
+      <div class="save-info">
+        <span class="save-empty">空存档位</span>
+        <span class="save-meta">${slot.kind === "auto" ? "进入剧情后自动记录，无需手动存" : "游玩时可把当前章节存到这里"}</span>
+      </div>
+      <div class="save-act">${canSave ? `<button class="sbtn save" onclick="saveAct('save','${slot.id}',this)">存入当前</button>` : ""}</div>
+    </div>`;
+  }
+  const isAuto = e.mode === "auto" || slot.kind === "auto";
+  const canSave = slot.kind === "manual" && inStoryPage();
+  return `<div class="save-row">
+    <span class="save-tag ${isAuto ? "auto" : "manual"}">${slot.label}</span>
+    <div class="save-info">
+      <span class="save-role">${e.role || "未知角色"}<em>${e.chapter || ""}</em></span>
+      <span class="save-meta"><span class="mode ${isAuto ? "" : "manual"}">${isAuto ? "自动" : "手动"}</span>
+        · ${fmtSaveTime(e.t)}</span>
+    </div>
+    <div class="save-act">
+      <button class="sbtn load" onclick="saveAct('load','${slot.id}',this)">读取</button>
+      ${canSave ? `<button class="sbtn save" onclick="saveAct('save','${slot.id}',this)">覆盖</button>` : ""}
+      <button class="sbtn del" onclick="saveAct('del','${slot.id}',this)">删除</button>
+    </div>
+  </div>`;
+}
+function renderSavePanel(){
+  const panel = document.getElementById("savePanel");
+  if(!panel) return;
+  const rows = SAVE_SLOTS.map(slotRowHTML).join("");
+  panel.innerHTML = `
+    <div class="save-head">
+      <span class="save-title">存 档</span>
+      <button class="save-x" onclick="closeSavePanel()" title="关闭">×</button>
+    </div>
+    ${rows}
+    <div class="save-msg ${saveMsg ? "show" : ""}" id="saveMsg">${saveMsg}</div>`;
+  /* 四条存档位按顺序错开浮现 */
+  panel.querySelectorAll(".save-row").forEach(function(r, i){
+    r.style.animationDelay = (0.10 + i * 0.05).toFixed(2) + "s";
+  });
+}
+/* 面板内按钮：读取 / 存入（覆盖需二次确认）/ 删除（二次确认） */
+function saveAct(kind, slotId, el){
+  const slot = SAVE_SLOTS.find(s=>s.id === slotId);
+  if(!slot) return;
+
+  if(kind === "load"){
+    const e = savesRead()[slotId];
+    if(!e || !STORY[e.node]) return;
+    closeSavePanel(true);       // 读档要立刻走，别等收束动画
+    storyHist = [e.node];       // 读档即从这里重新起算「上一章」，不混进读档前的路径
+    const target = "#story/" + e.node;
+    if(location.hash === target) router(); else location.hash = target;
+    return;
+  }
+
+  if(kind === "save"){
+    if(!inStoryPage()) return;
+    const exist = savesRead()[slotId];
+    if(el && exist && el.dataset.wait !== "1"){
+      el.dataset.wait = "1"; el.textContent = "确认覆盖";
+      setTimeout(()=>{ if(el.isConnected){ el.dataset.wait = ""; el.textContent = "覆盖"; } }, 2600);
+      return;
+    }
+    const node = location.hash.split("/")[1];
+    writeSave(slotId, node, "manual");
+    flashSaveMsg("已存入「" + slot.label + "」· " + roleOfNode(node));
+    renderSavePanel(); positionSavePanel(); refreshSaveTab();
+    return;
+  }
+
+  if(kind === "del"){
+    const all = savesRead();
+    if(el && all[slotId] && el.dataset.wait !== "1"){
+      el.dataset.wait = "1"; el.textContent = "确认删除";
+      setTimeout(()=>{ if(el.isConnected){ el.dataset.wait = ""; el.textContent = "删除"; } }, 2600);
+      return;
+    }
+    delete all[slotId];
+    savesWrite(all);
+    flashSaveMsg("已删除「" + slot.label + "」");
+    renderSavePanel(); positionSavePanel(); refreshSaveTab();
+    return;
+  }
+}
+function flashSaveMsg(text){
+  saveMsg = text;
+  clearTimeout(saveMsgTimer);
+  saveMsgTimer = setTimeout(()=>{ saveMsg = ""; renderSavePanel(); }, 3000);
+}
+
+/* 点面板外面 / 按 Esc 收起。
+   遮罩层不再拦截指针，所以这里顺手把这一击拦掉，免得关面板的同时误触底下的按钮。 */
+document.addEventListener("pointerdown", function(e){
+  const stage = document.getElementById("saveStage");
+  if(!stage || stage.hidden) return;
+  const t = e.target;
+  if(t && t.closest && (t.closest("#savePanel") || t.closest(".save-tab") || t.closest(".save-open"))) return;
+  e.stopPropagation();
+  closeSavePanel();
+  const blockClick = function(ev){ ev.preventDefault(); ev.stopPropagation(); cleanup(); };
+  const cleanup = function(){ document.removeEventListener("click", blockClick, true); };
+  document.addEventListener("click", blockClick, true);
+  setTimeout(cleanup, 500);
+}, true);
+document.addEventListener("keydown", function(e){
+  if(e.key === "Escape") closeSavePanel();
+});
+/* 窗口变化 / 字体加载完，面板可能尺寸变了，重新贴一次位置 */
+window.addEventListener("resize", ()=>{
+  const stage = document.getElementById("saveStage");
+  if(stage && !stage.hidden) positionSavePanel();
+});
+if(document.fonts && document.fonts.ready){
+  document.fonts.ready.then(()=>{
+    const stage = document.getElementById("saveStage");
+    if(stage && !stage.hidden) positionSavePanel();
+  });
+}
+/* 关闭 / 切走页面时，把当前章节再写一次（保证时间是最新的） */
+window.addEventListener("pagehide", ()=>{ if(currentStoryId) autoSave(currentStoryId); });
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState === "hidden" && currentStoryId) autoSave(currentStoryId);
+});
+
+/* —— hash 路由：根据网址 # 后面的内容切换页面 —— */
+function router(){
+  typeSfxStop();   // 离开当前页时，把还在响的打字声收掉
+  closeSavePanel(true);// 切页时立刻收起存档面板
+  const hash = location.hash.replace(/^#/,"");
+  if(!hash.startsWith("story/")){ currentStoryId = null; storyHist = []; }
+  document.body.classList.toggle("kg-mode", hash === "archive");
+  if(hash.startsWith("story/")){ renderStory(hash.split("/")[1]); }
+  else if(hash === "select"){ renderSelect(); }
+  else if(hash === "archive"){ renderArchive(); }
+  else { renderHome(); }
+  window.scrollTo(0,0);
+}
+window.addEventListener("hashchange", router);
+window.addEventListener("load", router);
+
+/* ===== 背景音乐：自动播放 + 右上角静音开关 / 悬停音量条 ===== */
+(function(){
+  const bgm = document.getElementById("bgm");
+  const btn = document.getElementById("bgm-toggle");
+  const vol = document.getElementById("bgm-vol");
+  bgm.volume = 0.6;
+  const SVG_ON  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 5 6 9H3v6h3l5 4V5z" fill="currentColor" stroke="none"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+  const SVG_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 5 6 9H3v6h3l5 4V5z" fill="currentColor" stroke="none"/><line x1="16" y1="9" x2="21" y2="15"/><line x1="21" y1="9" x2="16" y2="15"/></svg>';
+  function paint(){ btn.innerHTML = (bgm.muted || bgm.volume === 0) ? SVG_OFF : SVG_ON; }
+  function tryPlay(){ bgm.play().catch(()=>{}); }
+  /* 浏览器拦截无声自动播放时，在用户首次点击/按键后解锁播放 */
+  function unlock(){ tryPlay(); document.removeEventListener("pointerdown", unlock); document.removeEventListener("keydown", unlock); }
+  tryPlay();
+  document.addEventListener("pointerdown", unlock);
+  document.addEventListener("keydown", unlock);
+  btn.addEventListener("click", ()=>{
+    bgm.muted = !bgm.muted;
+    if(!bgm.muted) tryPlay();
+    paint();
+  });
+  vol.addEventListener("input", ()=>{
+    bgm.volume = vol.value/100;
+    if(bgm.muted && vol.value > 0){ bgm.muted = false; tryPlay(); }
+    paint();
+  });
+  paint();
+})();
+
+/* ===== 全站按钮点击音效（assets/click.mp3，音量压低） ===== */
+(function(){
+  const SFX_VOL = 0.25;          // 想要更小就改这里，0~1
+  const pool = [new Audio("assets/click.mp3"), new Audio("assets/click.mp3")];
+  pool.forEach(a=>{ a.preload = "auto"; a.volume = SFX_VOL; });
+  let idx = 0;
+  function playSfx(){
+    const a = pool[idx = (idx + 1) % pool.length];
+    try{ a.currentTime = 0; a.play().catch(()=>{}); }catch(e){}
+  }
+  /* 所有可点元素：主要按钮、选项、选角卡、返回、跳过、清空、音量按钮、图谱页按钮，以及任何带 onclick 的元素 */
+  const SEL = ".ui-btn,.choice-btn,.skip-btn,.ach-clear,.bgm-btn,.kg-open,.kg-back,.role-card,.back,button,[onclick]";
+  document.addEventListener("pointerdown", function(e){
+    if(e.pointerType === "mouse" && e.button !== 0) return;
+    const t = e.target && e.target.closest ? e.target.closest(SEL) : null;
+    if(t) playSfx();
+  }, true);
+})();
+</script>
+</body>
+</html>

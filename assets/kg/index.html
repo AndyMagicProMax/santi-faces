@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>《三体》知识图谱 · 关系网</title>
+<script src="vis-network.min.js"></script>
+<script src="kgdata.js"></script>
+<script>
+  // 内嵌模式：被互动小说以 iframe 引入时隐藏自带标题栏，撑满高度
+  if (new URLSearchParams(location.search).get('embed')) {
+    document.documentElement.classList.add('embed');
+  }
+</script>
+<style>
+  :root{
+    --bg:#070b16; --panel:#0e1424; --panel-2:#131a2e; --border:#1f2a44;
+    --text:#d6e0f5; --muted:#7b8bb0; --accent:#4fc3f7; --accent2:#ab47bc;
+    --ok:#66bb6a; --warn:#ffa726; --err:#ef5350;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;font-size:14px;overflow:hidden}
+  a{color:var(--accent);text-decoration:none}
+  header{height:56px;display:flex;align-items:center;padding:0 18px;
+    background:linear-gradient(90deg,#0a1020,#0e1424);border-bottom:1px solid var(--border);
+    box-shadow:0 2px 12px rgba(0,0,0,.4);position:relative;z-index:5}
+  header h1{font-size:18px;margin:0;letter-spacing:2px;
+    background:linear-gradient(90deg,#4fc3f7,#ab47bc);-webkit-background-clip:text;background-clip:text;color:transparent}
+  header h1 small{font-size:11px;color:var(--muted);letter-spacing:1px;margin-left:8px;-webkit-text-fill-color:var(--muted)}
+  .header-right{margin-left:auto;display:flex;gap:14px;align-items:center;font-size:12px;color:var(--muted)}
+  .pill{padding:3px 10px;border-radius:12px;background:var(--panel-2);border:1px solid var(--border)}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  .dot.ok{background:var(--ok);box-shadow:0 0 6px var(--ok)}
+  .dot.err{background:var(--err);box-shadow:0 0 6px var(--err)}
+  .layout{display:grid;grid-template-columns:300px 1fr 320px;height:calc(100vh - 56px)}
+  aside{background:var(--panel);border-right:1px solid var(--border);overflow-y:auto;padding:12px}
+  aside.right{border-right:none;border-left:1px solid var(--border)}
+  .center{display:flex;flex-direction:column;background:#05080f}
+  .toolbar{padding:8px 12px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--panel)}
+  .toolbar input,.toolbar select,aside input,aside select{background:var(--panel-2);border:1px solid var(--border);color:var(--text);
+    padding:6px 9px;border-radius:5px;font-size:13px;outline:none}
+  .toolbar input:focus,aside input:focus{border-color:var(--accent)}
+  button{background:var(--panel-2);border:1px solid var(--border);color:var(--text);padding:6px 12px;
+    border-radius:5px;cursor:pointer;font-size:12px;transition:.15s}
+  button:hover{border-color:var(--accent);color:var(--accent)}
+  button.primary{background:linear-gradient(90deg,#1565c0,#6a1b9a);border:none;color:#fff}
+  button.primary:hover{filter:brightness(1.15)}
+  .graph-wrap{position:relative;flex:1;min-height:0}
+  #graph{position:absolute;inset:0}
+  #graph-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    color:var(--muted);flex-direction:column;gap:10px;pointer-events:none;z-index:2}
+  .section-title{font-size:12px;color:var(--muted);letter-spacing:1px;margin:14px 0 8px;
+    border-left:3px solid var(--accent);padding-left:8px;text-transform:uppercase}
+  .search-box{position:relative}
+  .search-box input{width:100%}
+  .result-list{margin-top:10px;max-height:340px;overflow-y:auto}
+  .result-item{padding:8px 10px;border-radius:5px;cursor:pointer;border:1px solid transparent;margin-bottom:4px;
+    background:var(--panel-2);transition:.12s}
+  .result-item:hover{border-color:var(--accent);background:#18223d}
+  .result-item.active{border-color:var(--accent2);background:#1c1838}
+  .result-item .name{font-weight:600}
+  .result-item .meta{font-size:11px;color:var(--muted);margin-top:2px}
+  .tag{display:inline-block;padding:1px 7px;border-radius:8px;font-size:10px;margin-right:4px}
+  .detail-card{background:var(--panel-2);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:10px}
+  .detail-card h3{margin:0 0 6px;font-size:15px;color:var(--accent)}
+  .detail-card .desc{font-size:12.5px;line-height:1.7;color:#b8c4e0}
+  .rel-list{max-height:300px;overflow-y:auto}
+  .rel-item{padding:6px 0;border-bottom:1px dashed var(--border);font-size:12px;cursor:pointer}
+  .rel-item:hover{color:var(--accent)}
+  .rel-item .rel-cn{color:var(--accent2);font-weight:600}
+  .legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .legend span{font-size:10px;padding:2px 8px;border-radius:8px;color:#0a0e1a;font-weight:600}
+  .path-row{display:flex;gap:6px;margin-bottom:6px}
+  .path-row select{flex:1}
+  .combo{position:relative;flex:1;min-width:0}
+  .combo input{width:100%}
+  .combo-list{display:none;position:absolute;top:100%;left:0;right:0;margin-top:2px;
+    background:var(--panel-2);border:1px solid var(--border);border-radius:4px;
+    max-height:220px;overflow-y:auto;z-index:30;box-shadow:0 6px 16px rgba(0,0,0,.5)}
+  .combo-item{padding:6px 10px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:6px}
+  .combo-item:hover,.combo-item.hl{background:#18223d;color:var(--accent)}
+  .combo-item .cname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .combo-empty{padding:8px 10px;font-size:11px;color:var(--muted);cursor:default}
+  .empty{color:var(--muted);font-size:12px;text-align:center;padding:14px}
+  .conn-banner{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:9;
+    background:rgba(239,83,80,.15);border:1px solid var(--err);color:#ffcdd2;padding:7px 16px;
+    border-radius:6px;font-size:12px;display:none;max-width:80%}
+  ::-webkit-scrollbar{width:7px;height:7px}
+  ::-webkit-scrollbar-thumb{background:#26334f;border-radius:4px}
+  ::-webkit-scrollbar-track{background:transparent}
+  html.embed header{display:none}
+  html.embed .layout{height:100vh;grid-template-columns:250px 1fr 268px}
+  html.embed aside{padding:10px}
+  html.embed .section-title{margin:10px 0 6px}
+  html.embed .result-list{max-height:220px}
+</style>
+</head>
+<body>
+<header>
+  <h1>《三体》知识图谱 <small>三部曲 · 人物 / 事件 / 组织 / 概念关系网</small></h1>
+  <div class="header-right">
+    <span class="pill"><span id="conn-dot" class="dot"></span><span id="conn-text">检测连接…</span></span>
+    <span class="pill">节点 <b id="stat-nodes">-</b></span>
+    <span class="pill">关系 <b id="stat-rels">-</b></span>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- 左侧：搜索与路径查询 -->
+  <aside class="left">
+    <div class="section-title">搜索</div>
+    <div class="search-box">
+      <input id="search-input" placeholder="输入人物 / 事件 / 概念，如：罗辑、黑暗森林、水滴" />
+    </div>
+    <div style="margin-top:8px">
+      <select id="label-filter" style="width:100%">
+        <option value="">全部类型</option>
+        <option value="Character">人物</option>
+        <option value="Event">关键事件</option>
+        <option value="Organization">组织 / 阵营</option>
+        <option value="Concept">核心概念</option>
+        <option value="Location">地点</option>
+        <option value="Technology">技术 / 物品</option>
+      </select>
+    </div>
+    <div class="result-list" id="result-list"><div class="empty">输入关键词开始搜索</div></div>
+
+    <div class="section-title">关系链探查</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:6px">输入或选择两个节点，查找它们之间的最短关系路径</div>
+    <div class="path-row">
+      <div class="combo" id="combo-from">
+        <input id="path-from-input" placeholder="搜索起点…（支持名称/别名）" autocomplete="off" />
+        <div class="combo-list" id="path-from-list"></div>
+      </div>
+      <button id="set-from" title="将当前选中节点设为起点">←</button>
+    </div>
+    <div class="path-row">
+      <div class="combo" id="combo-to">
+        <input id="path-to-input" placeholder="搜索终点…（支持名称/别名）" autocomplete="off" />
+        <div class="combo-list" id="path-to-list"></div>
+      </div>
+      <button id="set-to" title="将当前选中节点设为终点">←</button>
+    </div>
+    <button class="primary" id="find-path" style="width:100%">查找关系路径</button>
+
+    <div class="section-title">图例</div>
+    <div class="legend" id="legend"></div>
+  </aside>
+
+  <!-- 中间：图谱画布 -->
+  <main class="center">
+    <div class="toolbar">
+      <button id="btn-all">全图浏览</button>
+      <button id="btn-subgraph">聚焦选中</button>
+      <button id="btn-fit">重新布局</button>
+      <button id="btn-clear-path">清除路径高亮</button>
+      <span style="flex:1"></span>
+      <span style="font-size:11px;color:var(--muted)">双击节点 = 展开其一跳关系 · 单击 = 查看详情</span>
+    </div>
+    <div class="graph-wrap">
+      <div class="conn-banner" id="conn-banner"></div>
+      <div id="graph-placeholder">加载图谱中…</div>
+      <div id="graph"></div>
+    </div>
+  </main>
+
+  <!-- 右侧：详情 -->
+  <aside class="right">
+    <div class="section-title">节点详情</div>
+    <div id="detail-panel"><div class="empty">点击左侧结果或图中节点查看详情</div></div>
+  </aside>
+</div>
+
+<script>
+/* ========= 配置 ========= */
+const LABEL_CN = {Character:"人物",Event:"关键事件",Organization:"组织/阵营",Concept:"核心概念",Location:"地点",Technology:"技术/物品"};
+const GROUP_COLOR = {
+  Character:"#4fc3f7", Event:"#ef5350", Organization:"#66bb6a",
+  Concept:"#ab47bc", Location:"#ffa726", Technology:"#26c6da"
+};
+const allNodes = new Map();   // gid -> node 原始数据
+let network = null;
+let dsNodes, dsEdges;
+let currentView = "all";      // all | subgraph | path
+let currentCenter = null;     // 当前聚焦的中心 gid
+
+/* ========= 工具 ========= */
+const $ = id => document.getElementById(id);
+/* ===== 本地数据层：把 Flask 的 /api/* 换成对 KG_RAW 的内存查询，脱离服务器也能用 ===== */
+const KGD = (function(){
+  const raw = window.KG_RAW || {nodes:[],edges:[]};
+  const deg = {};
+  raw.edges.forEach(e=>{ deg[e.source]=(deg[e.source]||0)+1; deg[e.target]=(deg[e.target]||0)+1; });
+  const list = raw.nodes.map(n=>({
+    gid:n.id, name:n.name||"", description:n.description||"",
+    aliases:(n.aliases||[]).slice(), faction:n.faction||null,
+    labels:[n.label].filter(Boolean), degree:deg[n.id]||0
+  }));
+  const byId = new Map(list.map(n=>[n.gid,n]));
+  const edges = raw.edges.map(e=>({
+    source:e.source, target:e.target,
+    type:e.relation||"", cn:e.cn||e.relation||""
+  }));
+  const adj = new Map();
+  edges.forEach(e=>{
+    if(!adj.has(e.source)) adj.set(e.source,[]);
+    if(!adj.has(e.target)) adj.set(e.target,[]);
+    adj.get(e.source).push({id:e.target, e:e});
+    adj.get(e.target).push({id:e.source, e:e});
+  });
+  function stats(){
+    const labels={}, rels={};
+    list.forEach(n=>{ const l=n.labels[0]; if(l) labels[l]=(labels[l]||0)+1; });
+    edges.forEach(e=>{ rels[e.type]=(rels[e.type]||0)+1; });
+    const srt = o => Object.keys(o).sort((a,b)=>o[b]-o[a]).map(k=>({name:k,count:o[k]}));
+    return {node_count:list.length, rel_count:edges.length, labels:srt(labels), rel_types:srt(rels)};
+  }
+  function search(q,label,limit){
+    q = q||""; label = label||""; limit = limit||30;
+    let rows = list.filter(n=>
+      (!label || n.labels.includes(label)) &&
+      (!q || n.name.includes(q) || n.aliases.some(a=>a.includes(q)) || (n.description||"").includes(q))
+    );
+    rows.sort((a,b)=> (b.degree-a.degree) || a.name.localeCompare(b.name,"zh"));
+    rows = rows.slice(0,limit);
+    return {query:q, label:label, count:rows.length, results:rows};
+  }
+  function subgraph(gid, limit){
+    limit = limit||80;
+    const center = byId.get(gid); if(!center) return null;
+    const nodes=[], es=[], seen=new Set();
+    for(const item of (adj.get(gid)||[])){
+      const other = byId.get(item.id);
+      if(other && !seen.has(item.id)){ seen.add(item.id); nodes.push(other); }
+      es.push(item.e);
+      if(es.length>=limit) break;
+    }
+    return {center:center, nodes:nodes, edges:es};
+  }
+  function full(limit){
+    limit = limit||500;
+    return {nodes:list.slice(0,limit), edges:edges.slice(0,limit*2)};
+  }
+  function path(a,b){
+    if(!byId.has(a) || !byId.has(b)) return null;
+    const prev = new Map([[a,null]]), depth = new Map([[a,0]]), queue=[a], MAX=6;
+    while(queue.length){
+      const cur = queue.shift(), d = depth.get(cur);
+      if(cur===b) break;
+      if(d>=MAX) continue;
+      for(const item of (adj.get(cur)||[])){
+        if(!prev.has(item.id)){ prev.set(item.id,{parent:cur,edge:item.e}); depth.set(item.id,d+1); queue.push(item.id); }
+      }
+    }
+    if(!prev.has(b)) return null;
+    const ids=[b], es=[]; let cur=b;
+    while(prev.get(cur)){ const p=prev.get(cur); es.push(p.edge); ids.push(p.parent); cur=p.parent; }
+    ids.reverse(); es.reverse();
+    return {nodes:ids.map(i=>byId.get(i)), edges:es};
+  }
+  return {stats:stats, search:search, subgraph:subgraph, full:full, path:path, byId:byId};
+})();
+
+async function api(url){
+  const u = new URL(url, location.href);
+  const pth = u.pathname.replace(/^\/[A-Za-z]:/,"").replace(/\/+$/,"");
+  const q = u.searchParams;
+  if(pth==="/api/health") return {ok:true, message:"本地数据（离线完整版）", uri:"local://kgdata"};
+  if(pth==="/api/stats") return KGD.stats();
+  if(pth==="/api/graph") return KGD.full(parseInt(q.get("limit")||"500",10));
+  if(pth==="/api/search") return KGD.search(q.get("q")||"", q.get("label")||"", parseInt(q.get("limit")||"30",10));
+  const sg = pth.match(/^\/api\/node\/(.+)\/subgraph$/);
+  if(sg){ const r = KGD.subgraph(decodeURIComponent(sg[1])); if(!r) throw new Error("节点不存在"); return r; }
+  if(pth==="/api/path"){
+    const r = KGD.path(q.get("from"), q.get("to"));
+    if(!r) throw new Error("未找到连通路径（可能超出最大跳数限制）");
+    return r;
+  }
+  throw new Error("未知接口 "+url);
+}
+function primaryLabel(labels){
+  if(!labels) return "Entity";
+  return labels.find(l=>l!=="Entity") || "Entity";
+}
+function nodeToVis(n){
+  const g = primaryLabel(n.labels);
+  return {
+    id:n.gid, label:n.name, group:g,
+    title:(n.name||"")+(n.description?("\n"+n.description):""),
+    color:{background:GROUP_COLOR[g]||"#888", border:"#0d47a1", highlight:{background:"#fff176",border:"#fbc02d"}},
+    font:{color:"#0a0e1a", size:14, face:"Microsoft YaHei"},
+    shape:"box", margin:8, widthConstraint:{minimum:60, maximum:160}
+  };
+}
+function edgeToVis(e){
+  return {
+    from:e.source, to:e.target, label:e.cn || e.type,
+    arrows:"to", font:{size:11, color:"#cfd8e3", strokeWidth:0, face:"Microsoft YaHei"},
+    color:{color:"#3a4a6b", highlight:"#ffeb3b", hover:"#81d4fa"},
+    smooth:{type:"continuous"}
+  };
+}
+
+/* ========= 初始化画布 ========= */
+function initNetwork(){
+  const container = $("graph");
+  dsNodes = new vis.DataSet();
+  dsEdges = new vis.DataSet();
+  const options = {
+    nodes:{borderWidth:1},
+    edges:{arrowStrikethrough:false},
+    physics:{barnesHut:{gravitationalConstant:-4000, springLength:140, springConstant:0.04},
+             stabilization:{iterations:200}},
+    interaction:{hover:true, multiselect:true, navigationButtons:false, keyboard:false},
+    layout:{improvedLayout:true}
+  };
+  network = new vis.Network(container, {nodes:dsNodes, edges:dsEdges}, options);
+  network.on("click", params => {
+    if(params.nodes.length){ showDetail(params.nodes[0]); }
+  });
+  network.on("doubleClick", params => {
+    if(params.nodes.length){ focusSubgraph(params.nodes[0]); }
+  });
+}
+
+/* ========= 连接与统计 ========= */
+async function checkHealth(){
+  try{
+    const h = await api("/api/health");
+    if(h.ok){
+      $("conn-dot").className = "dot ok"; $("conn-text").textContent = "本地数据 · 完整版";
+      $("conn-banner").style.display = "none";
+      return true;
+    }else{
+      $("conn-dot").className = "dot err"; $("conn-text").textContent = "未连接";
+      showConnBanner(h.message);
+      return false;
+    }
+  }catch(e){
+    $("conn-dot").className = "dot err"; $("conn-text").textContent = "服务异常";
+    showConnBanner(String(e.message||e));
+    return false;
+  }
+}
+function showConnBanner(msg){
+  const b = $("conn-banner");
+  b.innerHTML = "⚠ 无法连接 Neo4j："+msg+"。请先启动 Neo4j 并运行 <code>python scripts/import_to_neo4j.py</code> 导入数据。";
+  b.style.display = "block";
+  $("graph-placeholder").style.display = "flex";
+  $("graph-placeholder").textContent = "图谱数据未加载";
+}
+async function loadStats(){
+  try{
+    const s = await api("/api/stats");
+    $("stat-nodes").textContent = s.node_count;
+    $("stat-rels").textContent = s.rel_count;
+  }catch(e){ /* health 已提示 */ }
+}
+
+/* ========= 全图 ========= */
+async function loadFullGraph(){
+  $("graph-placeholder").style.display = "flex";
+  $("graph-placeholder").textContent = "加载全图…";
+  try{
+    const g = await api("/api/graph?limit=800");
+    allNodes.clear();
+    g.nodes.forEach(n => allNodes.set(n.gid, n));
+    populatePathSelects();
+    dsNodes.clear(); dsEdges.clear();
+    dsNodes.add(g.nodes.map(nodeToVis));
+    dsEdges.add(uniqEdges(g.edges).map(edgeToVis));
+    currentView = "all";
+    $("graph-placeholder").style.display = "none";
+    network.fit({animation:true});
+    /* 力学松弛会改变布局，稳定后再自适应一次，避免节点跑出视野 */
+    setTimeout(()=>{ try{ network.fit({animation:false}); }catch(e){} }, 1500);
+  }catch(e){
+    $("graph-placeholder").textContent = "加载失败："+(e.message||e);
+  }
+}
+function uniqEdges(edges){
+  const seen = new Set(), out=[];
+  for(const e of edges){
+    const k = e.source+"|"+e.target+"|"+e.type;
+    if(!seen.has(k)){ seen.add(k); out.push(e); }
+  }
+  return out;
+}
+
+/* ========= 搜索 ========= */
+let searchTimer=null;
+$("search-input").addEventListener("input", ()=>{
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(doSearch, 280);
+});
+$("label-filter").addEventListener("change", doSearch);
+async function doSearch(){
+  const q = $("search-input").value;
+  const label = $("label-filter").value;
+  const box = $("result-list");
+  if(!q && !label){ box.innerHTML='<div class="empty">输入关键词开始搜索</div>'; return; }
+  box.innerHTML='<div class="empty">搜索中…</div>';
+  try{
+    const r = await api("/api/search?q="+encodeURIComponent(q)+"&label="+encodeURIComponent(label)+"&limit=40");
+    if(!r.results.length){ box.innerHTML='<div class="empty">未找到匹配节点</div>'; return; }
+    box.innerHTML = r.results.map(n=>{
+      const g = primaryLabel(n.labels);
+      return `<div class="result-item" data-gid="${n.gid}">
+        <div class="name"><span class="tag" style="background:${GROUP_COLOR[g]||'#888'}">${LABEL_CN[g]||g}</span>${esc(n.name)}</div>
+        <div class="meta">${n.degree} 条关联 · ${esc((n.description||"").slice(0,28))}</div>
+      </div>`;
+    }).join("");
+    box.querySelectorAll(".result-item").forEach(el=>{
+      el.addEventListener("click", ()=>{
+        box.querySelectorAll(".result-item").forEach(x=>x.classList.remove("active"));
+        el.classList.add("active");
+        const gid = el.dataset.gid;
+        focusSubgraph(gid);
+        showDetail(gid);
+      });
+    });
+  }catch(e){
+    box.innerHTML='<div class="empty">搜索出错：'+esc(e.message||e)+'</div>';
+  }
+}
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+/* ========= 详情 + 子图 ========= */
+async function showDetail(gid){
+  currentCenter = gid;
+  const panel = $("detail-panel");
+  try{
+    const sg = await api("/api/node/"+encodeURIComponent(gid)+"/subgraph");
+    const c = sg.center;
+    const g = primaryLabel(c.labels);
+    const relsHtml = sg.edges.map(e=>{
+      const otherGid = (e.source===gid)? e.target : e.source;
+      const other = allNodes.get(otherGid) || {name:otherGid, labels:["Entity"]};
+      const og = primaryLabel(other.labels);
+      const dir = (e.source===gid)? "→" : "←";
+      return `<div class="rel-item" data-gid="${otherGid}">
+        <span class="rel-cn">${esc(e.cn||e.type)}</span> ${dir}
+        <span class="tag" style="background:${GROUP_COLOR[og]||'#888'}">${LABEL_CN[og]||og}</span>${esc(other.name)}
+      </div>`;
+    }).join("");
+    panel.innerHTML = `
+      <div class="detail-card">
+        <h3><span class="tag" style="background:${GROUP_COLOR[g]||'#888'}">${LABEL_CN[g]||g}</span>${esc(c.name)}</h3>
+        ${c.aliases&&c.aliases.length?`<div style="font-size:11px;color:var(--muted);margin-bottom:6px">别名：${c.aliases.map(esc).join("、")}</div>`:""}
+        ${c.faction?`<div style="font-size:11px;color:var(--warn);margin-bottom:6px">阵营：${esc(c.faction)}</div>`:""}
+        <div class="desc">${esc(c.description||"暂无描述")}</div>
+      </div>
+      <div class="section-title" style="margin-top:6px">关联关系（${sg.edges.length}）</div>
+      <div class="rel-list">${relsHtml || '<div class="empty">该节点暂无关联关系</div>'}</div>`;
+    panel.querySelectorAll(".rel-item").forEach(el=>{
+      el.addEventListener("click", ()=>{
+        const ogid = el.dataset.gid;
+        showDetail(ogid);
+        if(currentView!=="all") focusSubgraph(ogid);
+        else { network.selectNodes([ogid]); network.focus(ogid,{scale:1.2,animation:true}); }
+      });
+    });
+  }catch(e){
+    panel.innerHTML = '<div class="empty">加载详情失败：'+esc(e.message||e)+'</div>';
+  }
+}
+
+async function focusSubgraph(gid){
+  currentCenter = gid;
+  currentView = "subgraph";
+  $("graph-placeholder").style.display="none";
+  try{
+    const sg = await api("/api/node/"+encodeURIComponent(gid)+"/subgraph");
+    const nodes = [sg.center, ...sg.nodes];
+    nodes.forEach(n=>allNodes.set(n.gid,n));
+    dsNodes.clear(); dsEdges.clear();
+    dsNodes.add(nodes.map(nodeToVis));
+    dsEdges.add(uniqEdges(sg.edges).map(edgeToVis));
+    // 高亮中心
+    setTimeout(()=>{
+      network.selectNodes([gid]);
+      network.fit({animation:true, nodes:[gid]});
+    }, 120);
+  }catch(e){ /* 详情处已提示 */ }
+}
+
+/* ========= 路径查询（可搜索选择框） ========= */
+function createCombo(inputId, listId){
+  const input = $(inputId), list = $(listId);
+  let items = [];        // {gid, name, g, searchText}
+  let selected = null;   // 当前选中项
+  let hlIndex = -1;      // 键盘高亮行
+
+  function render(q){
+    const s = (q||"").trim().toLowerCase();
+    const filtered = s ? items.filter(it=>it.searchText.includes(s)) : items;
+    if(!filtered.length){
+      list.innerHTML = '<div class="combo-empty">未找到匹配节点，换个关键词试试</div>';
+    }else{
+      list.innerHTML = filtered.slice(0,40).map((it,i)=>
+        `<div class="combo-item${i===hlIndex?' hl':''}" data-gid="${it.gid}">
+           <span class="tag" style="background:${GROUP_COLOR[it.g]||'#888'}">${LABEL_CN[it.g]||it.g}</span>
+           <span class="cname">${esc(it.name)}</span>
+         </div>`).join("");
+    }
+    list.style.display = "block";
+  }
+  function updateHL(){
+    const rows = [...list.querySelectorAll(".combo-item")];
+    rows.forEach((r,i)=>r.classList.toggle("hl", i===hlIndex));
+    if(rows[hlIndex]) rows[hlIndex].scrollIntoView({block:"nearest"});
+  }
+  function pick(it){
+    selected = it;
+    input.value = it.name;
+    list.style.display = "none";
+  }
+  function hide(){ list.style.display = "none"; hlIndex = -1; }
+
+  input.addEventListener("focus", ()=>{ hlIndex = -1; render(""); });
+  input.addEventListener("input", ()=>{ selected = null; hlIndex = -1; render(input.value); });
+  input.addEventListener("keydown", (ev)=>{
+    const rows = [...list.querySelectorAll(".combo-item")];
+    if(ev.key === "ArrowDown" && rows.length){
+      ev.preventDefault();
+      hlIndex = Math.min(hlIndex+1, rows.length-1);
+      updateHL();
+    }else if(ev.key === "ArrowUp" && rows.length){
+      ev.preventDefault();
+      hlIndex = Math.max(hlIndex-1, 0);
+      updateHL();
+    }else if(ev.key === "Enter"){
+      ev.preventDefault();
+      if(hlIndex>=0 && rows[hlIndex]) rows[hlIndex].click();
+      else if(rows.length===1) rows[0].click();
+    }else if(ev.key === "Escape"){ hide(); }
+  });
+  // 用 mousedown 抢在 blur 之前完成点选
+  list.addEventListener("mousedown", (ev)=>{
+    const row = ev.target.closest(".combo-item");
+    if(!row) return;
+    ev.preventDefault();
+    const it = items.find(x=>x.gid===row.dataset.gid);
+    if(it) pick(it);
+  });
+  input.addEventListener("blur", ()=> setTimeout(hide, 120));
+
+  return {
+    setItems(arr){ items = arr; },
+    getGid(){ return selected ? selected.gid : ""; },
+    setByGid(gid){
+      const it = items.find(x=>x.gid===gid);
+      if(it) pick(it);
+    }
+  };
+}
+const comboFrom = createCombo("path-from-input","path-from-list");
+const comboTo = createCombo("path-to-input","path-to-list");
+
+function populatePathSelects(){
+  const arr = [...allNodes.values()].sort((a,b)=>(a.name||"").localeCompare(b.name||"","zh"))
+    .map(n=>({
+      gid: n.gid,
+      name: n.name || n.gid,
+      g: primaryLabel(n.labels),
+      searchText: ((n.name||"")+" "+(n.aliases||[]).join(" ")).toLowerCase()
+    }));
+  comboFrom.setItems(arr);
+  comboTo.setItems(arr);
+}
+$("set-from").onclick = ()=>{ if(currentCenter) comboFrom.setByGid(currentCenter); };
+$("set-to").onclick = ()=>{ if(currentCenter) comboTo.setByGid(currentCenter); };
+$("find-path").onclick = async ()=>{
+  const a = comboFrom.getGid(), b = comboTo.getGid();
+  if(!a||!b){ alert("请先搜索并选中起点和终点"); return; }
+  if(a===b){ alert("起点和终点是同一个节点"); return; }
+  try{
+    const p = await api("/api/path?from="+encodeURIComponent(a)+"&to="+encodeURIComponent(b));
+    currentView = "path";
+    p.nodes.forEach(n=>allNodes.set(n.gid,n));
+    dsNodes.clear(); dsEdges.clear();
+    dsNodes.add(p.nodes.map(nodeToVis));
+    dsEdges.add(uniqEdges(p.edges).map(edgeToVis));
+    // 高亮路径边
+    setTimeout(()=>{
+      const edgeIds = dsEdges.getIds();
+      network.selectEdges(edgeIds);
+      network.fit({animation:true});
+    },120);
+    // 详情显示路径摘要
+    const names = p.nodes.map(n=>n.name);
+    const steps = p.edges.map(e=>{
+      const s = allNodes.get(e.source), t = allNodes.get(e.target);
+      return `${esc(s&&s.name||e.source)} —<b style="color:var(--accent2)">${esc(e.cn||e.type)}</b>→ ${esc(t&&t.name||e.target)}`;
+    });
+    $("detail-panel").innerHTML = `
+      <div class="detail-card">
+        <h3>关系路径（${p.nodes.length} 个节点 · ${p.edges.length} 跳）</h3>
+        <div class="desc" style="margin-bottom:8px">${names.map(esc).join(" → ")}</div>
+        <div class="rel-list">${steps.map(s=>`<div class="rel-item">${s}</div>`).join("")}</div>
+      </div>`;
+  }catch(e){ alert("查找失败："+(e.message||e)); }
+};
+
+/* ========= 工具栏 ========= */
+$("btn-all").onclick = ()=>{ currentView="all"; loadFullGraph(); };
+$("btn-subgraph").onclick = ()=>{ if(currentCenter) focusSubgraph(currentCenter); };
+$("btn-fit").onclick = ()=> network.fit({animation:true});
+$("btn-clear-path").onclick = ()=>{ network.unselectAll(); if(currentView==="path") loadFullGraph(); };
+
+/* ========= 图例 ========= */
+function renderLegend(){
+  $("legend").innerHTML = Object.keys(GROUP_COLOR).map(g=>
+    `<span style="background:${GROUP_COLOR[g]}">${LABEL_CN[g]}</span>`).join("");
+}
+
+/* ========= 启动 ========= */
+window.addEventListener("load", async ()=>{
+  if(typeof vis === "undefined"){
+    $("graph-placeholder").innerHTML = "⚠ 可视化库 vis-network 加载失败，请检查网络连接后刷新。";
+    return;
+  }
+  renderLegend();
+  initNetwork();
+  const ok = await checkHealth();
+  if(ok){ loadStats(); loadFullGraph(); }
+  else { loadStats(); }
+  // 定时重连检测
+  setInterval(async ()=>{ if(!(await checkHealth())) {} else { /* ok */ } }, 15000);
+});
+</script>
+</body>
+</html>

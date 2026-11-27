@@ -339,7 +339,7 @@ body.kg-mode .kg-frame-wrap{height:calc(100vh - 142px);min-height:560px}
 #bgm-vol{width:110px;accent-color:var(--face);cursor:pointer}
 
 /* ===== 存档：首页「存档」交互键 + 悬浮存档面板 ===== */
-.save-dock{display:flex;justify-content:center;margin:2px 0 0}
+.save-dock{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:2px 0 0}
 .save-tab{
   display:inline-flex;align-items:center;gap:8px;
   padding:3px 15px;font-family:inherit;font-size:12px;letter-spacing:3px;line-height:1.9;
@@ -517,6 +517,73 @@ body.kg-mode .kg-frame-wrap{height:calc(100vh - 142px);min-height:560px}
   background:rgba(10,15,20,.94);border:1px solid rgba(143,196,212,.4);color:var(--text);font-size:12.5px;
   letter-spacing:1px;padding:10px 20px;border-radius:3px;opacity:0;pointer-events:none;transition:.25s;max-width:82vw;text-align:center}
 .toast-msg.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* ===== 讨论交流区 ===== */
+.board{max-width:860px;margin:0 auto;padding:54px 20px 90px}
+.board-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.board-title{font-size:20px;letter-spacing:8px;color:var(--face);font-weight:400}
+.board-sub{font-size:12px;letter-spacing:1.5px;color:var(--text-dim)}
+.board-tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.board-tab{position:relative;padding:8px 2px;font-size:13px;letter-spacing:3px;color:var(--text-dim);
+  cursor:pointer;border-bottom:2px solid transparent;transition:.2s}
+.board-tab:hover{color:var(--text)}
+.board-tab.on{color:var(--face);border-color:var(--face)}
+.board-write{background:var(--panel);border:1px solid var(--line);padding:14px;border-radius:4px;margin-bottom:20px}
+.board-write textarea{width:100%;box-sizing:border-box;min-height:76px;resize:vertical;background:rgba(8,12,16,.7);
+  border:1px solid var(--line);color:var(--text);font-family:inherit;font-size:13.5px;line-height:1.9;
+  padding:10px 12px;border-radius:3px;outline:none;transition:.18s}
+.board-write textarea:focus{border-color:rgba(143,196,212,.6)}
+.board-write-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:12px}
+.board-tip{font-size:11.5px;color:var(--text-dim);letter-spacing:1px}
+.board-send{padding:7px 26px;font-family:inherit;font-size:12.5px;letter-spacing:3px;color:var(--face);
+  background:rgba(143,196,212,.08);border:1px solid rgba(143,196,212,.5);border-radius:3px;cursor:pointer;transition:.2s}
+.board-send:hover:not(:disabled){background:rgba(143,196,212,.18);color:#dff2f8}
+.board-send:disabled{opacity:.5;cursor:default}
+.post{background:var(--panel);border:1px solid var(--line);border-left:3px solid rgba(143,196,212,.35);
+  padding:14px 16px;margin-bottom:12px;border-radius:3px}
+.post-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.post-user{font-size:12.5px;letter-spacing:2px;color:var(--face)}
+.post-time{font-size:11px;letter-spacing:1px;color:#5f6b75}
+.post-text{font-size:13.5px;line-height:2;color:var(--text);white-space:pre-wrap;word-break:break-word}
+.post-acts{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.pact{display:inline-flex;align-items:center;gap:6px;padding:3px 12px;font-family:inherit;font-size:11.5px;
+  letter-spacing:1px;background:transparent;border:1px solid rgba(255,255,255,.16);border-radius:3px;
+  color:var(--text-dim);cursor:pointer;transition:.18s}
+.pact:hover{color:var(--text);border-color:rgba(255,255,255,.36)}
+.pact.liked{color:#e08a9a;border-color:rgba(224,138,154,.65);background:rgba(224,138,154,.1)}
+.pact.danger{color:#b57a6d;border-color:rgba(196,106,90,.45)}
+.pact.danger:hover{color:#e0927f;border-color:rgba(196,106,90,.85);background:rgba(196,106,90,.14)}
+.pact svg{width:13px;height:13px}
+.comments{margin-top:10px;border-top:1px dashed rgba(255,255,255,.1);padding-top:10px;
+  display:flex;flex-direction:column;gap:8px}
+.cmt{font-size:12.5px;line-height:1.9;color:#b9c4cc;word-break:break-word}
+.cmt b{color:var(--face);font-weight:400;letter-spacing:1px}
+.cmt .del{margin-left:8px;color:#b57a6d;cursor:pointer;font-size:11px;letter-spacing:1px}
+.cmt-line{display:flex;gap:8px;margin-top:6px}
+.cmt-input{flex:1;background:rgba(8,12,16,.7);border:1px solid var(--line);color:var(--text);
+  font-family:inherit;font-size:12.5px;padding:7px 10px;border-radius:3px;outline:none}
+.cmt-input:focus{border-color:rgba(143,196,212,.55)}
+.post-empty,.msg-empty{font-size:12.5px;color:var(--text-dim);letter-spacing:1px;padding:26px 0;text-align:center}
+.msg-item{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);
+  padding:12px 16px;margin-bottom:10px;border-radius:3px;cursor:pointer;transition:.2s}
+.msg-item:hover{border-color:rgba(143,196,212,.5)}
+.msg-item.unread{border-left:3px solid #e0485c}
+.msg-ic{flex:none;width:26px;height:26px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.15);
+  border-radius:50%;color:var(--face);font-size:12px}
+.msg-body{flex:1;min-width:0}
+.msg-title{font-size:12.5px;color:var(--text);letter-spacing:1px;margin-bottom:4px}
+.msg-title b{color:var(--face);font-weight:400}
+.msg-ex{font-size:11.5px;color:#7c8892;line-height:1.8;overflow:hidden;text-overflow:ellipsis;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.msg-time{flex:none;font-size:11px;color:#5f6b75;letter-spacing:.5px}
+/* 未读红点 */
+.save-tab{position:relative}
+.dot{position:absolute;top:-4px;right:-4px;width:8px;height:8px;border-radius:50%;background:#e0485c;
+  box-shadow:0 0 8px rgba(224,72,92,.9);display:none}
+.dot.on{display:block}
+@media(max-width:560px){
+  .board{padding:38px 14px 70px}
+  .post-head{flex-wrap:wrap}
+}
 </style>
 </head>
 <body>
@@ -1769,9 +1836,18 @@ function renderHome(){
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 4h12l4 4v12H4z"/><path d="M8 4v6h6V4"/><path d="M8 20v-6h8v6"/></svg>
           存 档 <span class="save-n" id="saveCount">${savesCount() ? savesCount() + " / 4" : "空"}</span>
         </button>
+        <button class="save-tab" onclick="location.hash='#board'" title="讨论交流区">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 5h16v10H9l-4 4z"/></svg>
+          讨论交流区 <span class="dot js-dot"></span>
+        </button>
+        <button class="save-tab" onclick="location.hash='#messages'" title="消息">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0v5l2 3H4l2-3z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg>
+          消息 <span class="dot js-dot"></span>
+        </button>
       </div>
       <div class="foot">非商业学习用途 · 原著：刘慈欣《三体》 · 网页作者：何思远 · 立绘形象参考：《三体》动画 · BGM：《THREE BODY》</div>
     </div>`;
+  refreshUnseen();   /* 拉一次未读消息数，点亮红点 */
 }
 
 /* —— 选角页 —— */
@@ -2869,11 +2945,286 @@ async function renderAdmin(){
     </table>
     <div class="admin-note">
       这里只读取用户名、角色与注册时间，<b>看不到任何人的密码</b>（密码由 Supabase 加密托管，前端与后台都无法获取）。<br>
-      「交流区」上线后，玩家发布内容的审核 / 删除入口会加在本页，普通玩家没有管理权限。
+      「交流区」的留言 / 评论删除按钮就在交流区里：管理员登录后，每条留言下方会多出「删除留言」，展开评论后每条评论后面会多出「删除」，普通玩家看不到这些按钮。
     </div>`;
   const box = document.getElementById("adminBody");
   if(box) box.innerHTML = body;
 }
+
+/* ============================================================
+   讨论交流区 · 留言 / 点赞 / 评论 / 消息 / 管理员删除
+   ============================================================ */
+let UNSEEN = 0;            // 未读消息数（别人对我的留言点赞或评论）
+let focusPostId = null;    // 从消息点进来时要定位的留言
+const SVG_HEART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 20s-7-4.4-7-9.3A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.7C19 15.6 12 20 12 20z"/></svg>';
+const SVG_BUBBLE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v10H9l-4 4z"/></svg>';
+
+function canPost(){ return !!(AUTH && AUTH.user && (AUTH.mode === "account" || AUTH.mode === "admin")); }
+function paintDots(){
+  document.querySelectorAll(".js-dot").forEach(el=>el.classList.toggle("on", UNSEEN > 0));
+}
+async function refreshUnseen(){
+  if(!canPost()){ UNSEEN = 0; paintDots(); return; }
+  try{
+    const token = await ensureToken();
+    if(!token){ UNSEEN = 0; paintDots(); return; }
+    const rows = await sbFetch("/rest/v1/notifications?select=id&seen=eq.false&limit=200", { token: token });
+    UNSEEN = rows ? rows.length : 0;
+  }catch(e){ UNSEEN = 0; }
+  paintDots();
+}
+async function markSeen(){
+  if(!canPost()) return;
+  UNSEEN = 0;
+  paintDots();
+  try{
+    const token = await ensureToken();
+    if(token) await sbFetch("/rest/v1/notifications?seen=eq.false", {
+      method:"PATCH", token: token, headers:{ "Prefer": "return=minimal" }, body:{ seen: true }
+    });
+  }catch(e){}
+}
+
+function boardShell(active){
+  const sub = canPost() ? ("你的昵称：" + escHtml(AUTH.user.username)) : "游客浏览模式 · 注册登录后可发言";
+  app.innerHTML = `
+    <div class="board">
+      <div class="board-head">
+        <div class="board-title">讨 论 交 流 区</div>
+        <div class="board-sub">${sub}</div>
+      </div>
+      <div class="board-tabs">
+        <div class="board-tab ${active === "board" ? "on" : ""}" data-bt="board">讨论<span class="dot js-dot" style="top:6px;right:-10px"></span></div>
+        <div class="board-tab ${active === "msg" ? "on" : ""}" data-bt="msg">消息<span class="dot js-dot" style="top:6px;right:-10px"></span></div>
+      </div>
+      <div id="boardBody"><div class="post-empty">正在加载…</div></div>
+      <div class="admin-back" onclick="location.hash='#home'">← 返回主页</div>
+    </div>`;
+  app.querySelectorAll("[data-bt]").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      if(el.dataset.bt === active) return;
+      location.hash = el.dataset.bt === "msg" ? "#messages" : "#board";
+    });
+  });
+  paintDots();
+}
+
+function postHTML(p, liked){
+  const admin = isAdmin();
+  const t = fmtFullTime(p.created_at);
+  return `<div class="post" id="post-${p.id}">
+    <div class="post-head">
+      <span class="post-user">${escHtml(p.username)}</span>
+      <span class="post-time">${t}</span>
+    </div>
+    <div class="post-text">${escHtml(p.content)}</div>
+    <div class="post-acts">
+      <button class="pact ${liked ? "liked" : ""}" data-act="like" data-id="${p.id}">${SVG_HEART}<span>${p.like_count || 0}</span></button>
+      <button class="pact" data-act="cmt" data-id="${p.id}">${SVG_BUBBLE}<span>${p.comment_count || 0} 评论</span></button>
+      ${admin ? `<button class="pact danger" data-act="delpost" data-id="${p.id}">删除留言</button>` : ""}
+    </div>
+    <div id="cmts-${p.id}"></div>
+  </div>`;
+}
+
+async function renderBoard(){
+  boardShell("board");
+  markSeen();                       // 打开交流区即视为已查看，红点清掉
+  const body = document.getElementById("boardBody");
+  if(!body) return;
+  let posts = [], myLikes = new Set();
+  try{
+    const token = await ensureToken();
+    const rows = await sbFetch("/rest/v1/posts?select=id,user_id,username,content,like_count,comment_count,created_at&order=created_at.desc&limit=50", { token: token });
+    posts = rows || [];
+    if(token){
+      const l = await sbFetch("/rest/v1/post_likes?select=post_id&user_id=eq." + encodeURIComponent(AUTH.user.id), { token: token });
+      (l || []).forEach(r=>myLikes.add(String(r.post_id)));
+    }
+  }catch(e){
+    body.innerHTML = `<div class="admin-note">读取留言失败：${escHtml(e.message)}<br>如果提示 relation "public.posts" does not exist，说明交流区建表脚本还没在 Supabase 执行。</div>`;
+    return;
+  }
+  const composer = canPost()
+    ? `<div class="board-write">
+        <textarea id="postText" maxlength="600" placeholder="写下你的想法…（公开发言，请遵守社区规范）"></textarea>
+        <div class="board-write-foot">
+          <span class="board-tip">以「${escHtml(AUTH.user.username)}」的身份发言</span>
+          <button class="board-send" id="postSend">发 布</button>
+        </div>
+      </div>`
+    : `<div class="board-write"><div class="board-tip">游客只能浏览。注册或登录后即可留言、点赞和评论。</div></div>`;
+  const list = posts.length
+    ? posts.map(p=>postHTML(p, myLikes.has(String(p.id)))).join("")
+    : `<div class="post-empty">还没有人留言，来写第一条吧。</div>`;
+  body.innerHTML = composer + `<div id="postWrap">${list}</div>`;
+
+  body.querySelectorAll("[data-act]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const id = btn.dataset.id, act = btn.dataset.act;
+      if(act === "like") toggleLike(id, btn);
+      else if(act === "cmt") toggleComments(id);
+      else if(act === "delpost") delPost(id);
+    });
+  });
+  const send = document.getElementById("postSend");
+  if(send) send.addEventListener("click", submitPost);
+  if(!canPost()){
+    const f = document.querySelector("#postWrap .pact");
+    if(f) f.addEventListener("click", ()=>{});
+  }
+  if(focusPostId){
+    const el = document.getElementById("post-" + focusPostId);
+    focusPostId = null;
+    if(el) el.scrollIntoView({ block:"center" });
+  }
+}
+
+async function toggleLike(postId, btn){
+  if(!canPost()){ toastMsg("游客不能点赞，登录后即可"); return; }
+  const token = await ensureToken();
+  if(!token){ toastMsg("登录状态已过期，请重新登录"); return; }
+  const liked = btn.classList.contains("liked");
+  try{
+    if(liked){
+      await sbFetch("/rest/v1/post_likes?post_id=eq." + encodeURIComponent(postId) + "&user_id=eq." + encodeURIComponent(AUTH.user.id), { method:"DELETE", token: token });
+    }else{
+      await sbFetch("/rest/v1/post_likes", { method:"POST", token: token, headers:{ "Prefer":"return=minimal" },
+        body:{ post_id: Number(postId), user_id: AUTH.user.id, username: AUTH.user.username } });
+    }
+    const y = window.scrollY;
+    await renderBoard();
+    window.scrollTo(0, y);
+  }catch(e){ toastMsg("点赞失败：" + e.message); }
+}
+
+async function toggleComments(postId){
+  const box = document.getElementById("cmts-" + postId);
+  if(!box) return;
+  if(box.dataset.open === "1"){ box.innerHTML = ""; box.dataset.open = "0"; return; }
+  box.dataset.open = "1";
+  await fillComments(postId, box);
+}
+
+async function fillComments(postId, box){
+  const token = await ensureToken();
+  box.innerHTML = `<div class="comments"><div class="cmt">加载评论…</div></div>`;
+  try{
+    const rows = await sbFetch("/rest/v1/post_comments?select=id,username,content,created_at&post_id=eq." + encodeURIComponent(postId) + "&order=created_at.asc&limit=100", { token: token });
+    const list = (rows || []).map(c=>`<div class="cmt"><b>${escHtml(c.username)}</b>：${escHtml(c.content)}<span class="post-time"> · ${fmtFullTime(c.created_at)}</span>${isAdmin() ? `<span class="del" data-delcmt="${c.id}">删除</span>` : ""}</div>`).join("");
+    box.innerHTML = `<div class="comments">
+        ${list || `<div class="cmt" style="color:#6f7d87">还没有评论</div>`}
+        ${canPost() ? `<div class="cmt-line"><input class="cmt-input" id="cmt-${postId}" maxlength="300" placeholder="说点什么…"><button class="pact" data-sendcmt="1">发送</button></div>` : ""}
+      </div>`;
+    const send = box.querySelector("[data-sendcmt]");
+    if(send) send.addEventListener("click", ()=>addComment(postId, box));
+    box.querySelectorAll("[data-delcmt]").forEach(el=>{
+      el.addEventListener("click", ()=>delComment(el.dataset.delcmt, postId, box));
+    });
+  }catch(e){
+    box.innerHTML = `<div class="comments"><div class="cmt">评论读取失败：${escHtml(e.message)}</div></div>`;
+  }
+}
+
+async function addComment(postId, box){
+  if(!canPost()){ toastMsg("游客不能评论，登录后即可"); return; }
+  const input = box.querySelector("#cmt-" + postId);
+  const text = ((input && input.value) || "").trim();
+  if(!text){ toastMsg("写点什么再发送吧"); return; }
+  const token = await ensureToken();
+  if(!token){ toastMsg("登录状态已过期，请重新登录"); return; }
+  try{
+    await sbFetch("/rest/v1/post_comments", { method:"POST", token: token, headers:{ "Prefer":"return=minimal" },
+      body:{ post_id: Number(postId), user_id: AUTH.user.id, username: AUTH.user.username, content: text } });
+    await fillComments(postId, box);
+    const y = window.scrollY;
+    await renderBoard();
+    window.scrollTo(0, y);
+    const nb = document.getElementById("cmts-" + postId);
+    if(nb){ nb.dataset.open = "1"; await fillComments(postId, nb); }
+  }catch(e){ toastMsg("评论失败：" + e.message); }
+}
+
+async function submitPost(){
+  if(!canPost()){ toastMsg("游客不能发言，注册登录后即可"); return; }
+  const ta = document.getElementById("postText");
+  const text = ((ta && ta.value) || "").trim();
+  if(!text){ toastMsg("写点什么再发布吧"); return; }
+  const token = await ensureToken();
+  if(!token){ toastMsg("登录状态已过期，请重新登录"); return; }
+  try{
+    await sbFetch("/rest/v1/posts", { method:"POST", token: token, headers:{ "Prefer":"return=minimal" },
+      body:{ user_id: AUTH.user.id, username: AUTH.user.username, content: text } });
+    toastMsg("已发布");
+    await renderBoard();
+  }catch(e){ toastMsg("发布失败：" + e.message); }
+}
+
+async function delPost(id){
+  if(!isAdmin()){ toastMsg("只有管理员可以删除留言"); return; }
+  if(!confirm("删除这条留言？该留言的点赞与评论会一起删除。")) return;
+  try{
+    await sbFetch("/rest/v1/posts?id=eq." + encodeURIComponent(id), { method:"DELETE", token: await ensureToken() });
+    toastMsg("已删除该留言");
+    await renderBoard();
+  }catch(e){ toastMsg("删除失败：" + e.message); }
+}
+async function delComment(id, postId, box){
+  if(!isAdmin()){ toastMsg("只有管理员可以删除评论"); return; }
+  if(!confirm("删除这条评论？")) return;
+  try{
+    await sbFetch("/rest/v1/post_comments?id=eq." + encodeURIComponent(id), { method:"DELETE", token: await ensureToken() });
+    toastMsg("已删除该评论");
+    await fillComments(postId, box);
+  }catch(e){ toastMsg("删除失败：" + e.message); }
+}
+
+async function renderMessages(){
+  boardShell("msg");
+  const body = document.getElementById("boardBody");
+  if(!body) return;
+  if(!canPost()){
+    body.innerHTML = `<div class="msg-empty">登录后可以查看别人对你留言的点赞和评论提醒。</div>`;
+    return;
+  }
+  let rows = [];
+  try{
+    const token = await ensureToken();
+    if(!token) throw new Error("登录状态已过期，请重新登录");
+    rows = await sbFetch("/rest/v1/notifications?select=id,kind,post_id,actor,excerpt,seen,created_at&order=created_at.desc&limit=80", { token: token }) || [];
+  }catch(e){
+    body.innerHTML = `<div class="admin-note">读取消息失败：${escHtml(e.message)}<br>如果提示 relation "public.notifications" does not exist，说明交流区建表脚本还没执行。</div>`;
+    return;
+  }
+  body.innerHTML = rows.length ? rows.map(n=>{
+    const isLike = n.kind === "like";
+    const title = isLike
+      ? `<b>${escHtml(n.actor)}</b> 赞了你的留言`
+      : `<b>${escHtml(n.actor)}</b> 评论了你的留言`;
+    return `<div class="msg-item ${n.seen ? "" : "unread"}" data-post="${n.post_id}">
+      <div class="msg-ic">${isLike ? "♥" : "💬"}</div>
+      <div class="msg-body">
+        <div class="msg-title">${title}</div>
+        <div class="msg-ex">${escHtml(n.excerpt || "")}</div>
+      </div>
+      <div class="msg-time">${fmtFullTime(n.created_at)}</div>
+    </div>`;
+  }).join("") : `<div class="msg-empty">还没有消息。别人点赞或评论你的留言时，会出现在这里。</div>`;
+
+  body.querySelectorAll(".msg-item").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      focusPostId = el.dataset.post;
+      location.hash = "#board";
+    });
+  });
+  markSeen();   // 看过消息就清红点
+}
+
+/* 未读红点轮询：停在主页时每 30 秒查一次 */
+setInterval(()=>{
+  const h = location.hash.replace(/^#/, "");
+  if(AUTH && (h === "" || h === "home")) refreshUnseen();
+}, 30000);
 
 /* —— hash 路由：根据网址 # 后面的内容切换页面 —— */
 function router(){
@@ -2894,6 +3245,8 @@ function router(){
   if(hash.startsWith("story/")){ renderStory(hash.split("/")[1]); }
   else if(hash === "select"){ renderSelect(); }
   else if(hash === "archive"){ renderArchive(); }
+  else if(hash === "board"){ renderBoard(); }
+  else if(hash === "messages"){ renderMessages(); }
   else if(hash === "admin"){ if(isAdmin()) renderAdmin(); else { setHashSafe("#home"); renderHome(); } }
   else { renderHome(); }
   window.scrollTo(0,0);

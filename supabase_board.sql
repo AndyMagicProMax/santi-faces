@@ -134,6 +134,8 @@ create or replace function public.on_comment_delete()
 returns trigger language plpgsql security definer as $$
 begin
   update public.posts set comment_count = greatest(comment_count - 1, 0) where id = old.post_id;
+  -- 评论被删掉后，指向这条评论的消息也一并清掉（别人的回复本身保留）
+  delete from public.notifications where comment_id = old.id;
   return old;
 end;
 $$;
@@ -197,8 +199,9 @@ create policy "posts insert self" on public.posts
   for insert with check (auth.uid() = user_id);
 
 drop policy if exists "posts delete admin" on public.posts;
-create policy "posts delete admin" on public.posts
-  for delete using (public.is_admin());
+drop policy if exists "posts delete self or admin" on public.posts;
+create policy "posts delete self or admin" on public.posts
+  for delete using (auth.uid() = user_id or public.is_admin());
 
 drop policy if exists "posts update admin" on public.posts;
 create policy "posts update admin" on public.posts
@@ -227,8 +230,12 @@ create policy "comments insert self" on public.post_comments
   for insert with check (auth.uid() = user_id);
 
 drop policy if exists "comments delete admin" on public.post_comments;
-create policy "comments delete admin" on public.post_comments
-  for delete using (public.is_admin());
+drop policy if exists "comments delete self or admin" on public.post_comments;
+create policy "comments delete self or admin" on public.post_comments
+  for delete using (auth.uid() = user_id or public.is_admin());
+
+-- 说明：删评论不会连带删别人的回复（parent_id 只是引用，没有级联）；
+--       删留言才会把它下面的评论一起级联删除，因为 post_id 上挂了 on delete cascade。
 
 -- 评论点赞
 drop policy if exists "clikes read all" on public.comment_likes;

@@ -565,8 +565,11 @@ body.kg-mode .kg-frame-wrap{height:calc(100vh - 142px);min-height:560px}
 .pact.small svg{width:11px;height:11px}
 .pin{display:inline-block;font-size:10px;letter-spacing:1px;color:#e0b96a;border:1px solid rgba(224,185,106,.55);
   background:rgba(224,185,106,.1);padding:0 6px;border-radius:2px;margin-right:8px;vertical-align:middle}
+.mine{display:inline-block;font-size:10px;letter-spacing:1px;color:var(--face);border:1px solid rgba(143,196,212,.45);
+  background:rgba(143,196,212,.08);padding:0 5px;border-radius:2px;margin-left:8px;vertical-align:middle}
 .post.pinned{border-left-color:rgba(224,185,106,.75);box-shadow:0 0 0 1px rgba(224,185,106,.12) inset}
 .reply-line{display:flex;gap:8px;margin-top:8px;align-items:center}
+.board-write textarea::placeholder,.cmt-input::placeholder{color:#55616b;letter-spacing:1px}
 .cmt-line{display:flex;gap:8px;margin-top:6px}
 .cmt-input{flex:1;background:rgba(8,12,16,.7);border:1px solid var(--line);color:var(--text);
   font-family:inherit;font-size:12.5px;padding:7px 10px;border-radius:3px;outline:none}
@@ -2954,7 +2957,7 @@ async function renderAdmin(){
     </table>
     <div class="admin-note">
       这里只读取用户名、角色与注册时间，<b>看不到任何人的密码</b>（密码由 Supabase 加密托管，前端与后台都无法获取）。<br>
-      「交流区」的留言 / 评论删除按钮就在交流区里：管理员登录后，每条留言下方会多出「删除留言」，展开评论后每条评论后面会多出「删除」，普通玩家看不到这些按钮。
+      「交流区」的删除权限：留言 / 评论的作者本人可以删掉自己发的（留言被删时，它下面的评论一并清空；评论被删时，别人对它的回复会保留），管理员可以删任何人的。后台这一页只看账号与注册时间。
     </div>`;
   const box = document.getElementById("adminBody");
   if(box) box.innerHTML = body;
@@ -2970,6 +2973,17 @@ const SVG_HEART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const SVG_BUBBLE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v10H9l-4 4z"/></svg>';
 
 function canPost(){ return !!(AUTH && AUTH.user && (AUTH.mode === "account" || AUTH.mode === "admin")); }
+/* Enter 发送，Shift+Enter 换行（中文输入法选词时不会误发） */
+function bindEnterSend(el, onSend){
+  if(!el) return;
+  el.addEventListener("keydown", function(e){
+    if(e.key !== "Enter") return;
+    if(e.isComposing) return;
+    if(e.shiftKey && el.tagName === "TEXTAREA") return;   // 多行框：Shift+Enter 走默认换行
+    e.preventDefault();
+    onSend();
+  });
+}
 function paintDots(){
   document.querySelectorAll(".js-dot").forEach(el=>el.classList.toggle("on", UNSEEN > 0));
 }
@@ -3021,20 +3035,22 @@ function boardShell(active){
 
 function postHTML(p, liked){
   const admin = isAdmin();
+  const mine = !!(AUTH && AUTH.user && p.user_id === AUTH.user.id);
+  const canDel = admin || mine;
   const t = fmtFullTime(p.created_at);
   const pinBtn = admin
     ? `<button class="pact" data-act="pin" data-id="${p.id}" data-pin="${p.pinned ? 1 : 0}">${p.pinned ? "取消置顶" : "置顶"}</button>`
     : "";
   return `<div class="post ${p.pinned ? "pinned" : ""}" id="post-${p.id}">
     <div class="post-head">
-      <span class="post-user">${p.pinned ? '<span class="pin">置顶</span>' : ""}${escHtml(p.username)}</span>
+      <span class="post-user">${p.pinned ? '<span class="pin">置顶</span>' : ""}${escHtml(p.username)}${mine ? '<span class="mine">我</span>' : ""}</span>
       <span class="post-time">${t}</span>
     </div>
     <div class="post-text">${escHtml(p.content)}</div>
     <div class="post-acts">
       <button class="pact ${liked ? "liked" : ""}" data-act="like" data-id="${p.id}">${SVG_HEART}<span>${p.like_count || 0}</span></button>
       <button class="pact" data-act="cmt" data-id="${p.id}">${SVG_BUBBLE}<span>${p.comment_count || 0} 评论</span></button>
-      ${admin ? `<button class="pact danger" data-act="delpost" data-id="${p.id}">删除留言</button>` : ""}
+      ${canDel ? `<button class="pact danger" data-act="delpost" data-id="${p.id}">删除留言</button>` : ""}
       ${pinBtn}
     </div>
     <div id="cmts-${p.id}"></div>
@@ -3061,7 +3077,7 @@ async function renderBoard(){
   }
   const composer = canPost()
     ? `<div class="board-write">
-        <textarea id="postText" maxlength="600" placeholder="写下你的想法…（公开发言，请遵守社区规范）"></textarea>
+        <textarea id="postText" maxlength="600" placeholder="写下你的想法…（Enter 发送，Shift+Enter 换行）"></textarea>
         <div class="board-write-foot">
           <span class="board-tip">以「${escHtml(AUTH.user.username)}」的身份发言</span>
           <button class="board-send" id="postSend">发 布</button>
@@ -3084,6 +3100,8 @@ async function renderBoard(){
   });
   const send = document.getElementById("postSend");
   if(send) send.addEventListener("click", submitPost);
+  const taEl = document.getElementById("postText");
+  if(taEl) bindEnterSend(taEl, submitPost);
   if(focusPostId){
     const pid = focusPostId, cid = focusCommentId;
     focusPostId = null; focusCommentId = null;
@@ -3131,7 +3149,7 @@ async function fillComments(postId, box){
   const token = await ensureToken();
   box.innerHTML = `<div class="comments"><div class="cmt">加载评论…</div></div>`;
   try{
-    const rows = await sbFetch("/rest/v1/post_comments?select=id,username,content,created_at,parent_id,reply_to,like_count&post_id=eq." + encodeURIComponent(postId) + "&order=created_at.asc&limit=200", { token: token });
+    const rows = await sbFetch("/rest/v1/post_comments?select=id,user_id,username,content,created_at,parent_id,reply_to,like_count&post_id=eq." + encodeURIComponent(postId) + "&order=created_at.asc&limit=200", { token: token });
     let myLikes = new Set();
     if(token){
       const l = await sbFetch("/rest/v1/comment_likes?select=comment_id&user_id=eq." + encodeURIComponent(AUTH.user.id), { token: token });
@@ -3139,22 +3157,26 @@ async function fillComments(postId, box){
     }
     const list = (rows || []).map(c=>{
       const liked = myLikes.has(String(c.id));
+      const mine = !!(AUTH && AUTH.user && c.user_id === AUTH.user.id);
+      const canDel = isAdmin() || mine;
       return `<div class="cmt ${c.parent_id ? "reply" : ""}" id="cmt-row-${c.id}">
-        <div class="cmt-body"><b>${escHtml(c.username)}</b>${c.reply_to ? " 回复 <b>" + escHtml(c.reply_to) + "</b>" : ""}：${escHtml(c.content)}<span class="post-time"> · ${fmtFullTime(c.created_at)}</span></div>
+        <div class="cmt-body"><b>${escHtml(c.username)}</b>${c.reply_to ? " 回复 <b>" + escHtml(c.reply_to) + "</b>" : ""}${mine ? '<span class="mine">我</span>' : ""}：${escHtml(c.content)}<span class="post-time"> · ${fmtFullTime(c.created_at)}</span></div>
         <div class="cmt-acts">
           <button class="pact small ${liked ? "liked" : ""}" data-clike="${c.id}">${SVG_HEART}<span>${c.like_count || 0}</span></button>
           <button class="pact small" data-creply="${c.id}" data-cname="${escHtml(c.username)}">回复</button>
-          ${isAdmin() ? `<span class="del" data-delcmt="${c.id}">删除</span>` : ""}
+          ${canDel ? `<span class="del" data-delcmt="${c.id}">删除</span>` : ""}
         </div>
         <div id="replybox-${c.id}"></div>
       </div>`;
     }).join("");
     box.innerHTML = `<div class="comments">
         ${list || `<div class="cmt" style="color:#6f7d87">还没有评论</div>`}
-        ${canPost() ? `<div class="cmt-line"><input class="cmt-input" id="cmt-${postId}" maxlength="300" placeholder="说点什么…"><button class="pact" data-sendcmt="1">发送</button></div>` : ""}
+        ${canPost() ? `<div class="cmt-line"><input class="cmt-input" id="cmt-${postId}" maxlength="300" placeholder="说点什么…（Enter 发送）"><button class="pact" data-sendcmt="1">发送</button></div>` : ""}
       </div>`;
     const send = box.querySelector("[data-sendcmt]");
     if(send) send.addEventListener("click", ()=>addComment(postId, box, null, ""));
+    const cmtInput = box.querySelector("#cmt-" + postId);
+    if(cmtInput) bindEnterSend(cmtInput, ()=>addComment(postId, box, null, ""));
     box.querySelectorAll("[data-delcmt]").forEach(el=>{
       el.addEventListener("click", ()=>delComment(el.dataset.delcmt, postId, box));
     });
@@ -3176,15 +3198,17 @@ function openReply(postId, box, commentId, name){
   if(!wrap) return;
   if(wrap.dataset.open === "1"){ wrap.innerHTML = ""; wrap.dataset.open = "0"; return; }
   wrap.dataset.open = "1";
-  wrap.innerHTML = `<div class="reply-line"><input class="cmt-input" id="rcmt-${commentId}" maxlength="300" placeholder="回复 ${escHtml(name)}…"><button class="pact" data-rsend="1">发送</button></div>`;
+  wrap.innerHTML = `<div class="reply-line"><input class="cmt-input" id="rcmt-${commentId}" maxlength="300" placeholder="回复 ${escHtml(name)}…（Enter 发送）"><button class="pact" data-rsend="1">发送</button></div>`;
   const input = wrap.querySelector("#rcmt-" + commentId);
   const btn = wrap.querySelector("[data-rsend]");
-  if(input) input.focus();
-  if(btn) btn.addEventListener("click", ()=>{
+  const fire = ()=>{
     const text = ((input && input.value) || "").trim();
     if(!text){ toastMsg("写点什么再发送吧"); return; }
     addComment(postId, box, commentId, name, text);
-  });
+  };
+  if(input) input.focus();
+  if(btn) btn.addEventListener("click", fire);
+  if(input) bindEnterSend(input, fire);
 }
 
 async function addComment(postId, box, parentId, replyTo, preset){
@@ -3261,22 +3285,26 @@ async function togglePin(id, pinned){
 }
 
 async function delPost(id){
-  if(!isAdmin()){ toastMsg("只有管理员可以删除留言"); return; }
-  if(!confirm("删除这条留言？该留言的点赞与评论会一起删除。")) return;
+  if(!canPost()){ toastMsg("请先登录"); return; }
+  if(!confirm("删除这条留言？它下面的所有评论也会一起删除。")) return;
   try{
     await sbFetch("/rest/v1/posts?id=eq." + encodeURIComponent(id), { method:"DELETE", token: await ensureToken() });
     toastMsg("已删除该留言");
     await renderBoard();
-  }catch(e){ toastMsg("删除失败：" + e.message); }
+  }catch(e){ toastMsg("删除失败：" + e.message + "（只有留言作者本人或管理员能删）"); }
 }
 async function delComment(id, postId, box){
-  if(!isAdmin()){ toastMsg("只有管理员可以删除评论"); return; }
-  if(!confirm("删除这条评论？")) return;
+  if(!canPost()){ toastMsg("请先登录"); return; }
+  if(!confirm("删除这条评论？（别人对它的回复会保留）")) return;
   try{
     await sbFetch("/rest/v1/post_comments?id=eq." + encodeURIComponent(id), { method:"DELETE", token: await ensureToken() });
     toastMsg("已删除该评论");
-    await fillComments(postId, box);
-  }catch(e){ toastMsg("删除失败：" + e.message); }
+    const y = window.scrollY;
+    await renderBoard();
+    window.scrollTo(0, y);
+    const nb = document.getElementById("cmts-" + postId);
+    if(nb){ nb.dataset.open = "1"; await fillComments(postId, nb); }
+  }catch(e){ toastMsg("删除失败：" + e.message + "（只有评论作者本人或管理员能删）"); }
 }
 
 async function renderMessages(){

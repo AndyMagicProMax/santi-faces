@@ -572,9 +572,12 @@ body.kg-mode .kg-frame-wrap{height:calc(100vh - 142px);min-height:560px}
 .reply-line{display:flex;gap:8px;margin-top:8px;align-items:center}
 .board-write textarea::placeholder,.cmt-input::placeholder{color:#55616b;letter-spacing:1px}
 .cmt-line{display:flex;gap:8px;margin-top:6px}
+.cmt-body{white-space:pre-wrap;word-break:break-word}
 .cmt-input{flex:1;background:rgba(8,12,16,.7);border:1px solid var(--line);color:var(--text);
-  font-family:inherit;font-size:12.5px;padding:7px 10px;border-radius:3px;outline:none}
+  font-family:inherit;font-size:12.5px;line-height:1.75;padding:7px 10px;border-radius:3px;outline:none;
+  resize:none;overflow-y:hidden;max-height:110px;min-height:34px;box-sizing:border-box}
 .cmt-input:focus{border-color:rgba(143,196,212,.55)}
+.cmt-line,.reply-line{align-items:flex-end}
 .post-empty,.msg-empty{font-size:12.5px;color:var(--text-dim);letter-spacing:1px;padding:26px 0;text-align:center}
 .msg-item{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);
   padding:12px 16px;margin-bottom:10px;border-radius:3px;cursor:pointer;transition:.2s}
@@ -2974,6 +2977,18 @@ const SVG_HEART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const SVG_BUBBLE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v10H9l-4 4z"/></svg>';
 
 function canPost(){ return !!(AUTH && AUTH.user && (AUTH.mode === "account" || AUTH.mode === "admin")); }
+/* 评论 / 回复输入框随内容长高（textarea，支持 Shift+Enter 换行） */
+function autoGrow(el){
+  if(!el || el.tagName !== "TEXTAREA") return;
+  const fit = ()=>{
+    el.style.height = "auto";
+    const h = Math.min(el.scrollHeight, 110);
+    el.style.height = h + "px";
+    el.style.overflowY = el.scrollHeight > 110 ? "auto" : "hidden";
+  };
+  el.addEventListener("input", fit);
+  fit();
+}
 /* Enter 发送，Shift+Enter 换行（中文输入法选词时不会误发） */
 function bindEnterSend(el, onSend){
   if(!el) return;
@@ -3172,12 +3187,12 @@ async function fillComments(postId, box){
     }).join("");
     box.innerHTML = `<div class="comments">
         ${list || `<div class="cmt" style="color:#6f7d87">还没有评论</div>`}
-        ${canPost() ? `<div class="cmt-line"><input class="cmt-input" id="cmt-${postId}" maxlength="300" placeholder="说点什么…（Enter 发送）"><button class="pact" data-sendcmt="1">发送</button></div>` : ""}
+        ${canPost() ? `<div class="cmt-line"><textarea class="cmt-input" id="cmt-${postId}" rows="1" maxlength="300" placeholder="说点什么…（Enter 发送，Shift+Enter 换行）"></textarea><button class="pact" data-sendcmt="1">发送</button></div>` : ""}
       </div>`;
     const send = box.querySelector("[data-sendcmt]");
     if(send) send.addEventListener("click", ()=>addComment(postId, box, null, ""));
     const cmtInput = box.querySelector("#cmt-" + postId);
-    if(cmtInput) bindEnterSend(cmtInput, ()=>addComment(postId, box, null, ""));
+    if(cmtInput){ autoGrow(cmtInput); bindEnterSend(cmtInput, ()=>addComment(postId, box, null, "")); }
     box.querySelectorAll("[data-delcmt]").forEach(el=>{
       el.addEventListener("click", ()=>delComment(el.dataset.delcmt, postId, box));
     });
@@ -3199,7 +3214,7 @@ function openReply(postId, box, commentId, name){
   if(!wrap) return;
   if(wrap.dataset.open === "1"){ wrap.innerHTML = ""; wrap.dataset.open = "0"; return; }
   wrap.dataset.open = "1";
-  wrap.innerHTML = `<div class="reply-line"><input class="cmt-input" id="rcmt-${commentId}" maxlength="300" placeholder="回复 ${escHtml(name)}…（Enter 发送）"><button class="pact" data-rsend="1">发送</button></div>`;
+  wrap.innerHTML = `<div class="reply-line"><textarea class="cmt-input" id="rcmt-${commentId}" rows="1" maxlength="300" placeholder="回复 ${escHtml(name)}…（Enter 发送，Shift+Enter 换行）"></textarea><button class="pact" data-rsend="1">发送</button></div>`;
   const input = wrap.querySelector("#rcmt-" + commentId);
   const btn = wrap.querySelector("[data-rsend]");
   const fire = ()=>{
@@ -3208,6 +3223,7 @@ function openReply(postId, box, commentId, name){
     addComment(postId, box, commentId, name, text);
   };
   if(input) input.focus();
+  if(input) autoGrow(input);
   if(btn) btn.addEventListener("click", fire);
   if(input) bindEnterSend(input, fire);
 }

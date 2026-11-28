@@ -568,6 +568,9 @@ body.kg-mode .kg-frame-wrap{height:calc(100vh - 142px);min-height:560px}
   background:rgba(224,185,106,.1);padding:0 6px;border-radius:2px;margin-right:8px;vertical-align:middle}
 .mine{display:inline-block;font-size:10px;letter-spacing:1px;color:var(--face);border:1px solid rgba(143,196,212,.45);
   background:rgba(143,196,212,.08);padding:0 5px;border-radius:2px;margin-left:8px;vertical-align:middle}
+.role-admin{display:inline-block;font-size:10px;letter-spacing:1px;font-weight:600;color:#141a20;
+  background:linear-gradient(180deg,#edd49a,#cda85c);border:1px solid rgba(232,196,126,.85);
+  padding:0 6px;border-radius:2px;margin-left:8px;vertical-align:middle;box-shadow:0 0 8px rgba(224,185,106,.22)}
 .post.pinned{border-left-color:rgba(224,185,106,.75);box-shadow:0 0 0 1px rgba(224,185,106,.12) inset}
 .reply-line{display:flex;gap:8px;margin-top:8px;align-items:center}
 .board-write textarea::placeholder,.cmt-input::placeholder{color:#55616b;letter-spacing:1px}
@@ -2811,7 +2814,7 @@ function setAuthMsg(text, ok){
 function friendlyAuthError(err, mode){
   const m = String((err && err.message) || "");
   if(/Invalid login credentials/i.test(m)) return "用户名或密码不正确";
-  if(/already registered|already exists|User already exists/i.test(m)) return "这个用户名已经被注册了，换一个试试";
+  if(/username taken|already registered|already exists|User already exists|Database error saving new user|duplicate key/i.test(m)) return "该用户名已被占用";
   if(/Email not confirmed/i.test(m)) return "账号还需要邮箱验证，请联系管理员开启自动确认";
   if(/Password should be|password.*6/i.test(m)) return "密码不符合要求，至少 6 位";
   if(/signups? not allowed|disabled/i.test(m)) return "当前已关闭注册，请稍后再试";
@@ -2839,8 +2842,10 @@ async function doAuthSubmit(e){
 
   try{
     if(authMode === "register"){
+      const taken = await sbFetch("/rest/v1/rpc/username_taken", { method:"POST", body:{ p_name: username } }).catch(()=>null);
+      if(taken === true){ setAuthMsg("该用户名已被占用", false); return; }
       const t = await sbSignUp(username, password);
-      if(!t || !t.access_token) throw new Error("用户名可能已被注册，或注册暂未开启，请换一个用户名试试");
+      if(!t || !t.access_token) throw new Error("username taken");
       AUTH = { mode:"account", access:t.access_token, refresh:t.refresh_token, expiresAt: Date.now() + ((t.expires_in || 3600) * 1000), user:{ id:t.user.id, username:username, role:"player", created_at:t.user.created_at } };
       saveAuth(AUTH);
       const prof = await sbProfile(t.user.id).catch(()=>null);
@@ -3059,7 +3064,7 @@ function postHTML(p, liked){
     : "";
   return `<div class="post ${p.pinned ? "pinned" : ""}" id="post-${p.id}">
     <div class="post-head">
-      <span class="post-user">${p.pinned ? '<span class="pin">置顶</span>' : ""}${escHtml(p.username)}${mine ? '<span class="mine">我</span>' : ""}</span>
+      <span class="post-user">${p.pinned ? '<span class="pin">置顶</span>' : ""}${escHtml(p.username)}${p.author_admin ? '<span class="role-admin">管理员</span>' : ""}${mine ? '<span class="mine">我</span>' : ""}</span>
       <span class="post-time">${t}</span>
     </div>
     <div class="post-text">${escHtml(p.content)}</div>
@@ -3081,7 +3086,7 @@ async function renderBoard(){
   let posts = [], myLikes = new Set();
   try{
     const token = await ensureToken();
-    const rows = await sbFetch("/rest/v1/posts?select=id,user_id,username,content,like_count,comment_count,pinned,created_at&order=pinned.desc,created_at.desc&limit=50", { token: token });
+    const rows = await sbFetch("/rest/v1/posts?select=id,user_id,username,content,like_count,comment_count,pinned,author_admin,created_at&order=pinned.desc,created_at.desc&limit=50", { token: token });
     posts = rows || [];
     if(token){
       const l = await sbFetch("/rest/v1/post_likes?select=post_id&user_id=eq." + encodeURIComponent(AUTH.user.id), { token: token });
@@ -3165,7 +3170,7 @@ async function fillComments(postId, box){
   const token = await ensureToken();
   box.innerHTML = `<div class="comments"><div class="cmt">加载评论…</div></div>`;
   try{
-    const rows = await sbFetch("/rest/v1/post_comments?select=id,user_id,username,content,created_at,parent_id,reply_to,like_count&post_id=eq." + encodeURIComponent(postId) + "&order=created_at.asc&limit=200", { token: token });
+    const rows = await sbFetch("/rest/v1/post_comments?select=id,user_id,username,content,created_at,parent_id,reply_to,like_count,author_admin&post_id=eq." + encodeURIComponent(postId) + "&order=created_at.asc&limit=200", { token: token });
     let myLikes = new Set();
     if(token){
       const l = await sbFetch("/rest/v1/comment_likes?select=comment_id&user_id=eq." + encodeURIComponent(AUTH.user.id), { token: token });
@@ -3176,7 +3181,7 @@ async function fillComments(postId, box){
       const mine = !!(AUTH && AUTH.user && c.user_id === AUTH.user.id);
       const canDel = isAdmin() || mine;
       return `<div class="cmt ${c.parent_id ? "reply" : ""}" id="cmt-row-${c.id}">
-        <div class="cmt-body"><b>${escHtml(c.username)}</b>${c.reply_to ? " 回复 <b>" + escHtml(c.reply_to) + "</b>" : ""}${mine ? '<span class="mine">我</span>' : ""}：${escHtml(c.content)}<span class="post-time"> · ${fmtFullTime(c.created_at)}</span></div>
+        <div class="cmt-body"><b>${escHtml(c.username)}</b>${c.author_admin ? '<span class="role-admin">管理员</span>' : ""}${c.reply_to ? " 回复 <b>" + escHtml(c.reply_to) + "</b>" : ""}${mine ? '<span class="mine">我</span>' : ""}：${escHtml(c.content)}<span class="post-time"> · ${fmtFullTime(c.created_at)}</span></div>
         <div class="cmt-acts">
           <button class="pact small ${liked ? "liked" : ""}" data-clike="${c.id}">${SVG_HEART}<span>${c.like_count || 0}</span></button>
           <button class="pact small" data-creply="${c.id}" data-cname="${escHtml(c.username)}">回复</button>
@@ -3303,9 +3308,10 @@ async function togglePin(id, pinned){
 
 async function delPost(id){
   if(!canPost()){ toastMsg("请先登录"); return; }
-  if(!confirm("删除这条留言？它下面的所有评论也会一起删除。")) return;
+  if(!confirm("删除这条留言？它下面的所有评论也会一起隐藏。")) return;
   try{
-    await sbFetch("/rest/v1/posts?id=eq." + encodeURIComponent(id), { method:"DELETE", token: await ensureToken() });
+    await sbFetch("/rest/v1/rpc/soft_delete_post", { method:"POST", token: await ensureToken(),
+      headers:{ "Prefer":"return=minimal" }, body:{ p_id: Number(id) } });
     toastMsg("已删除该留言");
     await renderBoard();
   }catch(e){ toastMsg("删除失败：" + e.message + "（只有留言作者本人或管理员能删）"); }
@@ -3314,7 +3320,8 @@ async function delComment(id, postId, box){
   if(!canPost()){ toastMsg("请先登录"); return; }
   if(!confirm("删除这条评论？（别人对它的回复会保留）")) return;
   try{
-    await sbFetch("/rest/v1/post_comments?id=eq." + encodeURIComponent(id), { method:"DELETE", token: await ensureToken() });
+    await sbFetch("/rest/v1/rpc/soft_delete_comment", { method:"POST", token: await ensureToken(),
+      headers:{ "Prefer":"return=minimal" }, body:{ p_id: Number(id) } });
     toastMsg("已删除该评论");
     const y = window.scrollY;
     await renderBoard();

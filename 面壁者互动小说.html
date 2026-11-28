@@ -2507,6 +2507,12 @@ async function makeAchievementCard(sceneId, s){
   g.font = '300 17px "Noto Sans SC", sans-serif';
   drawSpaced(g, "andymagicpromax.github.io/santi-faces", W/2, 1330, 1.5);
 
+  // 最下方用途与保存提示
+  g.textAlign = "left";
+  g.fillStyle = "rgba(150,168,180,.82)";
+  g.font = '300 15px "Noto Sans SC", sans-serif';
+  drawSpaced(g, "学习而非商业用途·长按可保存分享", W/2, 1364, 1);
+
   return cv.toDataURL("image/png");
 }
 async function buildAchCard(sceneId, s){
@@ -2798,6 +2804,12 @@ async function makeAchPoster(a){
   g.fillStyle = "rgba(128,146,158,.8)";
   g.font = '300 15px "Noto Sans SC", sans-serif';
   g.fillText("andymagicpromax.github.io/santi-faces", 88, 1368);
+
+  // 最下方用途与保存提示
+  g.textAlign = "left";
+  g.fillStyle = "rgba(150,168,180,.82)";
+  g.font = '300 15px "Noto Sans SC", sans-serif';
+  drawSpaced(g, "学习而非商业用途·长按可保存分享", W/2, 1372, 1);
 
   return cv.toDataURL("image/png");
 }

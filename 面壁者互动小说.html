@@ -2488,7 +2488,7 @@ async function makeAchievementCard(sceneId, s){
   g.fillStyle = "rgba(126,143,154,.9)";
   g.font = '300 20px "Noto Sans SC", sans-serif';
   drawSpaced(g, "达 成 者", W/2, 690, 7);
-  const nick = (AUTH.user && AUTH.user.username) ? AUTH.user.username : "游客";
+  const nick = nickNow();
   g.textAlign = "center";
   g.fillStyle = "#8FC4D4";
   g.font = '700 48px "Noto Serif SC", serif';
@@ -2561,7 +2561,7 @@ async function buildAchCard(sceneId, s){
 function saveAchCard(){
   if(!ACH_DATAURL){ toastMsg("成就卡还在生成，请稍等"); return; }
   const s = STORY[currentStoryId] || {};
-  const nick = (AUTH.user && AUTH.user.username) ? AUTH.user.username : "游客";
+  const nick = nickNow();
   const a = document.createElement("a");
   a.href = ACH_DATAURL;
   a.download = `面壁-${achEndingName(s)}-${nick}.png`;
@@ -2652,7 +2652,8 @@ function fadedPortrait(img, size){
   x.fillRect(0, size*.62, size, size*.38);
   return c;
 }
-async function makeAchPoster(a){
+function nickNow(){ return (AUTH && AUTH.user && AUTH.user.username) || "游客"; }
+async function makeAchPoster(a, plain){
   const W = 1080, H = 1440;
   const cv = document.createElement("canvas");
   cv.width = W; cv.height = H;
@@ -2685,7 +2686,7 @@ async function makeAchPoster(a){
   }
 
   // 成就背景线稿（白底转透明，叠在中上部）
-  if(a.bg){
+  if(a.bg && !plain){
     try{
       const art = await lineArtCanvas(a.bg, 1280, 720);
       g.save();
@@ -2710,8 +2711,8 @@ async function makeAchPoster(a){
   g.fillStyle = pg; g.beginPath(); g.ellipse(W*.5, 690, 430, 380, 0, 0, Math.PI*2); g.fill();
   g.restore();
 
-  const list = ACH_PORTRAIT[a.id] ? [ACH_PORTRAIT[a.id]] : [];
-  if(a.final){
+  const list = (!plain && ACH_PORTRAIT[a.id]) ? [ACH_PORTRAIT[a.id]] : [];
+  if(a.final && !plain){
     // 全收集：文字为主画面，正中金属「面壁」标题，不放立绘
     try{
       const img = await loadImage("assets/ach-title.png");
@@ -2802,7 +2803,7 @@ async function makeAchPoster(a){
   g.font = '300 19px "Noto Sans SC", sans-serif';
   drawSpaced(g, "达 成 者", W/2, 1052, 7);
 
-  const nick = (AUTH.user && AUTH.user.username) ? AUTH.user.username : "游客";
+  const nick = nickNow();
   g.textAlign = "center";
   g.fillStyle = "#8FC4D4";
   g.font = '700 44px "Noto Serif SC", serif';
@@ -2813,7 +2814,7 @@ async function makeAchPoster(a){
   g.fillText(`达成于 ${fmtDate(achPosterTime(a))}`, W/2, 1162);
 
   // 右下角二维码（白底板保证可扫）
-  try{
+  if(!plain) try{
     const qr = await loadImage("assets/qr.jpg");
     const Q = 180, pad = 10, px = W - 44 - 56 - Q, py = 1176;
     g.fillStyle = "rgba(236,243,246,.96)";
@@ -2881,20 +2882,36 @@ function openAchPoster(id){
 async function buildAchPoster(a){
   const slot = document.getElementById("posterSlot");
   if(!slot) return;
+  let url = "";
   try{
-    const url = await makeAchPoster(a);
-    if(!document.getElementById("posterSlot")) return;
-    POSTER_URL = url;
-    slot.innerHTML = `<img src="${url}" alt="${a.name} 成就海报">`;
-    const btn = document.getElementById("posterSave");
-    if(btn){ btn.disabled = false; btn.classList.remove("ghost"); }
+    url = await makeAchPoster(a);
   }catch(e){
-    if(slot) slot.innerHTML = `<div class="ach-loading">海报生成失败，请重试</div>`;
+    console.warn("[成就海报] 首次生成失败，重试：", e);
+    IMG_CACHE.clear(); LINEART_CACHE.clear();
+    try{
+      url = await makeAchPoster(a);
+    }catch(e2){
+      console.warn("[成就海报] 带图重试失败，改用无立绘版：", e2);
+      try{
+        url = await makeAchPoster(a, true);
+      }catch(e3){
+        console.warn("[成就海报] 生成失败：", e3);
+      }
+    }
   }
+  if(!document.getElementById("posterSlot")) return;
+  if(!url){
+    slot.innerHTML = `<div class="ach-loading">海报生成失败，请重试</div>`;
+    return;
+  }
+  POSTER_URL = url;
+  slot.innerHTML = `<img src="${url}" alt="${a.name} 成就海报">`;
+  const btn = document.getElementById("posterSave");
+  if(btn){ btn.disabled = false; btn.classList.remove("ghost"); }
 }
 function saveAchPoster(){
   if(!POSTER_URL){ toastMsg("海报还在生成，请稍等"); return; }
-  const nick = (AUTH.user && AUTH.user.username) ? AUTH.user.username : "游客";
+  const nick = nickNow();
   const safe = String(POSTER_NAME).replace(/[\\/:*?"<>|「」]/g, "");
   const a = document.createElement("a");
   a.href = POSTER_URL;

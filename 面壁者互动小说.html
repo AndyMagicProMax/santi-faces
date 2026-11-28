@@ -207,6 +207,34 @@ h1,h2,h3{font-family:"Noto Serif SC",serif;font-weight:700}
 .ach-card.on .ach-name{color:#e2f2f7;text-shadow:0 0 12px rgba(143,196,212,.35)}
 .ach-card.on .ach-state{color:#84d3a0;border-color:rgba(110,200,140,.55);background:rgba(110,200,140,.12)}
 .ach-card.final{grid-column:1 / -1}
+/* 已解锁可点开分享海报 */
+.ach-card.on{cursor:pointer}
+.ach-card.on:hover{border-color:rgba(143,196,212,.8);box-shadow:0 0 24px rgba(143,196,212,.22),inset 0 0 24px rgba(143,196,212,.06)}
+.ach-card.on:active{transform:scale(.995)}
+.ach-card .ach-dl{flex:none;font-size:10px;letter-spacing:1px;color:#8fc4d4;border:1px solid rgba(143,196,212,.45);
+  border-radius:3px;padding:1px 7px;background:rgba(143,196,212,.10)}
+/* 成就分享海报弹窗 */
+.poster-modal{position:fixed;inset:0;z-index:150;display:flex;align-items:center;justify-content:center;
+  padding:20px;background:rgba(3,7,12,.86);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  opacity:0;pointer-events:none;transition:opacity .28s ease}
+.poster-modal.show{opacity:1;pointer-events:auto}
+.poster-box{position:relative;width:min(420px,92vw);max-height:94vh;overflow:auto;
+  padding:14px 14px 16px;border:1px solid rgba(143,196,212,.4);border-radius:12px;
+  background:linear-gradient(180deg,rgba(13,21,30,.98),rgba(8,12,18,.98));
+  box-shadow:0 24px 70px rgba(0,0,0,.7),0 0 40px rgba(143,196,212,.12)}
+.poster-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.poster-head .ph-t{font-size:11px;letter-spacing:3px;color:#8fc4d4}
+.poster-head .ph-n{flex:1;min-width:0;font-size:13px;color:#e2f2f7;font-family:"Noto Serif SC",serif;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.poster-head .ph-x{flex:none;width:28px;height:28px;line-height:26px;text-align:center;border-radius:50%;
+  border:1px solid rgba(143,196,212,.35);color:#9fb6c2;cursor:pointer;font-size:16px}
+.poster-slot{position:relative;min-height:180px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--line);background:rgba(4,8,13,.6);border-radius:6px;overflow:hidden}
+.poster-slot img{display:block;width:100%;height:auto}
+.poster-slot .ach-loading{font-size:12px;letter-spacing:2px;color:var(--text-dim)}
+.poster-actions{display:flex;gap:10px;justify-content:center;margin-top:12px}
+.poster-actions .btn{padding:9px 20px;font-size:13px}
+.poster-hint{margin-top:8px;font-size:11px;letter-spacing:1px;color:#6f7d87;text-align:center}
 /* 游玩中达成成就：页面下方弹出的提示卡 */
 .ach-toast{position:fixed;left:50%;bottom:26px;z-index:140;pointer-events:none;
   transform:translate(-50%,18px);opacity:0;transition:opacity .45s ease,transform .45s ease;
@@ -220,6 +248,10 @@ h1,h2,h3{font-family:"Noto Serif SC",serif;font-weight:700}
   box-shadow:none}
 @media(max-width:720px){
   .ach-grid{grid-template-columns:1fr}
+  .ach-card .ach-state{display:none}   /* 手机端只留「海报」入口，避免右侧太挤 */
+  .ach-card .ach-dl{position:absolute;right:10px;top:9px}
+  .ach-card .ach-meta{padding-right:6px}
+  .poster-box{width:min(360px,94vw)}
   .ach-head{flex-wrap:wrap}
   .ach-clear{order:2}
 }
@@ -1956,17 +1988,31 @@ function renderHome(){
 /* —— 选角页 —— */
 /* 剧情线达成进度：记录已抵达的结局节点，存在本机 localStorage 里 */
 const ENDINGS_KEY = "santi_endings_v1";
+const END_TIMES_KEY = "santi_endings_time_v1";   // 每个结局首次达成的时间，用于成就海报上的日期
 function endingsDone(){
   try{ return new Set(JSON.parse(localStorage.getItem(ENDINGS_KEY) || "[]")); }
   catch(e){ return new Set(); }
+}
+function endTimesMap(){
+  try{
+    const o = JSON.parse(localStorage.getItem(END_TIMES_KEY) || "{}");
+    return (o && typeof o === "object" && !Array.isArray(o)) ? o : {};
+  }catch(e){ return {}; }
 }
 function markEnding(id){
   const sc = STORY[id];
   if(!sc || (sc.choices || []).length) return;   // 只认结局节点（choices 为空）
   const done = endingsDone();
-  if(done.has(id)) return;
-  done.add(id);
-  try{ localStorage.setItem(ENDINGS_KEY, JSON.stringify([...done])); }catch(e){}
+  const times = endTimesMap();
+  if(done.has(id) && times[id]) return;   // 已记录过，不重复写
+  if(!done.has(id)){
+    done.add(id);
+    try{ localStorage.setItem(ENDINGS_KEY, JSON.stringify([...done])); }catch(e){}
+  }
+  if(!times[id]){
+    times[id] = Date.now();
+    try{ localStorage.setItem(END_TIMES_KEY, JSON.stringify(times)); }catch(e){}
+  }
   cloudTouch();
   notifyAchievements();   // 刚好集满某个角色/全部角色时弹出成就卡
 }
@@ -1989,6 +2035,7 @@ function allEndingIds(){
 /* 清空达成记录（只清本机的结局进度与成就解锁记录，不动剧情本身） */
 function clearEndings(){
   try{ localStorage.removeItem(ENDINGS_KEY); }catch(e){}
+  try{ localStorage.removeItem(END_TIMES_KEY); }catch(e){}
   try{ localStorage.removeItem(ACH_SEEN_KEY); }catch(e){}
   cloudTouch();
   renderSelect();
@@ -2029,6 +2076,18 @@ const ACHIEVEMENTS = [
   {id:"ach_all",     roleId:null,         group:"all",     who:"全部角色",                  name:"「这是计划的一部分」",
    desc:"达成所有面壁者与破壁人的全部剧情线", icon:ACH_ICONS.orbit, bg:"assets/ach-all.webp", final:true}
 ];
+/* 成就海报用的立绘（已在 assets 里） */
+const ACH_PORTRAIT = {
+  ach_taylor:  "assets/taylor.webp",
+  ach_reidiaz: "assets/reidiaz.webp",
+  ach_hines:   "assets/hines.webp",
+  ach_luoji:   "assets/luoji.webp",
+  ach_vn:      "assets/vonneumann.webp",
+  ach_mozi:    "assets/mozi.webp",
+  ach_yamasan: "assets/yamazaki.webp",
+  ach_self:    "assets/luoji.webp"
+};
+const ACH_ALL_PORTRAITS = ["assets/luoji.webp","assets/taylor.webp","assets/reidiaz.webp","assets/hines.webp","assets/vonneumann.webp","assets/mozi.webp","assets/yamazaki.webp"];
 /* 某个角色的两条结局是否都已走到 */
 function roleAllDone(roleId){
   const r = ROLES.find(x=>x.id === roleId);
@@ -2052,8 +2111,8 @@ function achSeen(){
   catch(e){ return new Set(); }
 }
 /* 成就卡（面板与弹窗共用一套 DOM） */
-function achCardHTML(a, on){
-  return `<div class="ach-card ${on?"on":""} ${a.final?"final":""}" ${a.bg?`style="--achbg:url('${a.bg}')"`:""}>
+function achCardHTML(a, on, poster){
+  return `<div class="ach-card ${on?"on":""} ${a.final?"final":""}" ${a.bg?`style="--achbg:url('${a.bg}')"`:""}${poster&&on?` onclick="openAchPoster('${a.id}')"`:""}>
     ${a.bg?'<span class="ach-bg"></span>':''}
     <span class="ach-icon">${a.icon}</span>
     <span class="ach-meta">
@@ -2061,12 +2120,13 @@ function achCardHTML(a, on){
       <span class="ach-name">${a.name}</span>
       ${a.desc?`<span class="ach-desc">${a.desc}</span>`:""}
     </span>
+    ${poster&&on?'<span class="ach-dl">海报</span>':""}
     <span class="ach-state">${on?"已解锁":"未解锁"}</span>
   </div>`;
 }
 function achBodyHTML(){
   const un = new Set(unlockedAch().map(a=>a.id));
-  const grid = list => `<div class="ach-grid">${list.map(a=>achCardHTML(a, un.has(a.id))).join("")}</div>`;
+  const grid = list => `<div class="ach-grid">${list.map(a=>achCardHTML(a, un.has(a.id), true)).join("")}</div>`;
   const face = ACHIEVEMENTS.filter(a=>a.group==="face");
   const brk = ACHIEVEMENTS.filter(a=>a.group==="breaker");
   const fin = ACHIEVEMENTS.filter(a=>a.group==="all");
@@ -2466,6 +2526,311 @@ function saveAchCard(){
   const a = document.createElement("a");
   a.href = ACH_DATAURL;
   a.download = `面壁-${achEndingName(s)}-${nick}.png`;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ============================================================
+   成就分享海报（3:4，1080×1440）
+   结构沿用结局成就卡：上方「成就达成」→ 成就名 → 立绘 → 达成者 → 日期，
+   另加成就背景线稿与右下角网站二维码，方便直接发朋友圈 / 小红书。
+   ============================================================ */
+const IMG_CACHE = new Map();          // 已加载的图片
+const LINEART_CACHE = new Map();      // 去白底后的成就线稿
+function loadImage(src){
+  if(IMG_CACHE.has(src)) return IMG_CACHE.get(src);
+  const p = new Promise((res, rej)=>{
+    const im = new Image();
+    im.onload = ()=>res(im);
+    im.onerror = ()=>rej(new Error("图片加载失败：" + src));
+    im.src = src;
+  });
+  IMG_CACHE.set(src, p);
+  return p;
+}
+/* 成就背景图是白底线稿：把亮度当不透明度，白底剪掉，只留细线与色块 */
+function lineArtCanvas(src, w, h){
+  const key = src + "@" + w + "x" + h;
+  if(LINEART_CACHE.has(key)) return LINEART_CACHE.get(key);
+  const p = (async()=>{
+    const img = await loadImage(src);
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    const x = c.getContext("2d");
+    x.drawImage(img, 0, 0, w, h);
+    const d = x.getImageData(0, 0, w, h), px = d.data;
+    for(let i = 0; i < px.length; i += 4){
+      const lum = px[i]*.299 + px[i+1]*.587 + px[i+2]*.114;
+      px[i+3] = lum <= 12 ? 0 : Math.min(255, lum * 1.2);
+    }
+    x.putImageData(d, 0, 0);
+    return c;
+  })();
+  LINEART_CACHE.set(key, p);
+  return p;
+}
+function achPosterTime(a){
+  const times = endTimesMap();
+  let ids = [];
+  if(a.final){
+    ids = allEndingIds();
+  }else{
+    const r = ROLES.find(x=>x.id === a.roleId);
+    if(r) ids = roleEndings(r);
+  }
+  let ts = 0;
+  ids.forEach(id=>{ const t = Number(times[id] || 0); if(t > ts) ts = t; });
+  return ts || Date.now();
+}
+function fmtDate(ts){
+  const d = new Date(ts);
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;
+}
+/* 立绘底部渐隐，避免人头被硬切 */
+function fadedPortrait(img, size){
+  const c = document.createElement("canvas");
+  c.width = size; c.height = size;
+  const x = c.getContext("2d");
+  x.drawImage(img, 0, 0, size, size);
+  const gr = x.createLinearGradient(0, size*.62, 0, size);
+  gr.addColorStop(0, "rgba(0,0,0,0)");
+  gr.addColorStop(1, "rgba(0,0,0,1)");
+  x.globalCompositeOperation = "destination-out";
+  x.fillStyle = gr;
+  x.fillRect(0, size*.62, size, size*.38);
+  return c;
+}
+async function makeAchPoster(a){
+  const W = 1080, H = 1440;
+  const cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const g = cv.getContext("2d");
+  try{
+    await Promise.all([
+      document.fonts.load('900 96px "Noto Serif SC"'),
+      document.fonts.load('700 44px "Noto Serif SC"'),
+      document.fonts.load('400 26px "Noto Sans SC"'),
+      document.fonts.load('300 20px "Noto Sans SC"')
+    ]);
+  }catch(e){}
+
+  // 深空底色
+  const bg = g.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, "#0a1726"); bg.addColorStop(.40, "#060b13"); bg.addColorStop(1, "#03060a");
+  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  const halo = g.createRadialGradient(W*.5, H*.42, 20, W*.5, H*.42, W*.92);
+  halo.addColorStop(0, "rgba(88,160,190,.20)"); halo.addColorStop(.42, "rgba(40,84,112,.09)");
+  halo.addColorStop(.78, "rgba(16,34,50,.03)"); halo.addColorStop(1, "rgba(0,0,0,0)");
+  g.fillStyle = halo; g.fillRect(0, 0, W, H);
+
+  // 星点
+  let seed = 771033;
+  const rnd = ()=>{ seed = (seed*1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  for(let i = 0; i < 330; i++){
+    const x = rnd()*W, y = rnd()*H, r = rnd()*1.5 + .25, al = .12 + rnd()*.55;
+    g.fillStyle = `rgba(206,228,240,${al})`;
+    g.beginPath(); g.arc(x, y, r, 0, Math.PI*2); g.fill();
+  }
+
+  // 成就背景线稿（白底转透明，叠在中上部）
+  if(a.bg){
+    try{
+      const art = await lineArtCanvas(a.bg, 1280, 720);
+      g.save();
+      g.globalAlpha = .55;
+      g.globalCompositeOperation = "screen";
+      g.drawImage(art, -100, 118);
+      g.restore();
+      // 顶部压暗一点，保证标题可读
+      const sc = g.createLinearGradient(0, 60, 0, 540);
+      sc.addColorStop(0, "rgba(4,8,14,.92)");
+      sc.addColorStop(.55, "rgba(4,8,14,.52)");
+      sc.addColorStop(1, "rgba(4,8,14,0)");
+      g.fillStyle = sc; g.fillRect(44, 44, W-88, 540);
+    }catch(e){}
+  }
+
+  // 立绘：中间偏上，带冷光与底部渐隐
+  g.save();
+  const pg = g.createRadialGradient(W*.5, 700, 40, W*.5, 700, 440);
+  pg.addColorStop(0, "rgba(120,196,226,.20)"); pg.addColorStop(.45, "rgba(70,140,170,.08)");
+  pg.addColorStop(1, "rgba(0,0,0,0)");
+  g.fillStyle = pg; g.beginPath(); g.ellipse(W*.5, 690, 430, 380, 0, 0, Math.PI*2); g.fill();
+  g.restore();
+
+  const list = a.final ? ACH_ALL_PORTRAITS : (ACH_PORTRAIT[a.id] ? [ACH_PORTRAIT[a.id]] : []);
+  if(list.length === 1){
+    try{
+      const img = await loadImage(list[0]);
+      const PS = 560;
+      const pc = fadedPortrait(img, PS);
+      g.save();
+      g.shadowColor = "rgba(0,0,0,.55)"; g.shadowBlur = 30;
+      g.drawImage(pc, (W-PS)/2, 396);
+      g.restore();
+    }catch(e){}
+  }else if(list.length > 1){
+    // 全收集：七位角色两排合影
+    const PS = 250;
+    const gap = 8;
+    const rows = [list.slice(0,4), list.slice(4)];
+    const drawRow = async (arr, n, y)=>{
+      const total = arr.length*PS + (arr.length-1)*gap;
+      let x = (W-total)/2;
+      for(const src of arr){
+        try{
+          const img = await loadImage(src);
+          const pc = fadedPortrait(img, PS);
+          g.save();
+          g.globalAlpha = .95;
+          g.drawImage(pc, x, y);
+          g.restore();
+        }catch(e){}
+        x += PS + gap;
+      }
+    };
+    await drawRow(rows[0], 4, 400);
+    await drawRow(rows[1], 3, 618);
+  }
+
+  // 细金框 + 青色角标
+  g.strokeStyle = "rgba(201,185,138,.34)"; g.lineWidth = 1.5;
+  g.strokeRect(44, 44, W-88, H-88);
+  g.strokeStyle = "rgba(143,196,212,.55)"; g.lineWidth = 2;
+  const C = 40;
+  [[44,44,1,1],[W-44,44,-1,1],[44,H-44,1,-1],[W-44,H-44,-1,-1]].forEach(([x,y,sx,sy])=>{
+    g.beginPath(); g.moveTo(x + sx*C, y); g.lineTo(x, y); g.lineTo(x, y + sy*C); g.stroke();
+  });
+
+  g.textAlign = "left"; g.textBaseline = "alphabetic";
+
+  // 顶部标识
+  g.fillStyle = "rgba(143,196,212,.84)";
+  g.font = '400 18px "Noto Sans SC", sans-serif';
+  drawSpaced(g, "三 体 · 同 人 互 动 小 说", W/2, 112, 8);
+  g.fillStyle = "rgba(201,185,138,.55)";
+  g.fillRect(W/2 - 42, 138, 84, 1);
+
+  // 成就达成
+  g.fillStyle = "rgba(201,185,138,.95)";
+  g.font = '400 24px "Noto Sans SC", sans-serif';
+  drawSpaced(g, "成  就  达  成", W/2, 210, 12);
+
+  // 成就名
+  const name = String(a.name || "成就");
+  const size = name.length <= 4 ? 96 : name.length <= 6 ? 84 : name.length <= 8 ? 70 : 60;
+  g.save();
+  g.textAlign = "center";
+  g.shadowColor = "rgba(120,200,226,.45)"; g.shadowBlur = 32;
+  g.fillStyle = "#EDF4F8";
+  g.font = `900 ${size}px "Noto Serif SC", serif`;
+  g.fillText(name, W/2, 312);
+  g.shadowBlur = 0;
+  g.restore();
+
+  // 角色 / 身份
+  g.fillStyle = "rgba(164,186,198,.9)";
+  g.font = '400 25px "Noto Sans SC", sans-serif';
+  drawSpaced(g, a.id === "ach_luoji" ? "罗辑 · 面壁者视角" : String(a.who || ""), W/2, 368, 2);
+
+  // 下半段：达成者 / 日期
+  g.strokeStyle = "rgba(201,185,138,.26)"; g.lineWidth = 1;
+  g.beginPath(); g.moveTo(W*.26, 1004); g.lineTo(W*.74, 1004); g.stroke();
+
+  g.fillStyle = "rgba(132,150,162,.9)";
+  g.font = '300 19px "Noto Sans SC", sans-serif';
+  drawSpaced(g, "达 成 者", W/2, 1052, 7);
+
+  const nick = (AUTH.user && AUTH.user.username) ? AUTH.user.username : "游客";
+  g.textAlign = "center";
+  g.fillStyle = "#8FC4D4";
+  g.font = '700 44px "Noto Serif SC", serif';
+  g.fillText(nick.length > 12 ? nick.slice(0,12) + "…" : nick, W/2, 1112);
+
+  g.fillStyle = "rgba(150,168,180,.85)";
+  g.font = '300 19px "Noto Sans SC", sans-serif';
+  g.fillText(`达成于 ${fmtDate(achPosterTime(a))}`, W/2, 1162);
+
+  // 右下角二维码（白底板保证可扫）
+  try{
+    const qr = await loadImage("assets/qr.jpg");
+    const Q = 180, pad = 10, px = W - 44 - 56 - Q, py = 1176;
+    g.fillStyle = "rgba(236,243,246,.96)";
+    g.fillRect(px - pad, py - pad, Q + pad*2, Q + pad*2);
+    g.drawImage(qr, px, py, Q, Q);
+    g.fillStyle = "rgba(126,144,156,.92)";
+    g.font = '300 15px "Noto Sans SC", sans-serif';
+    g.textAlign = "right";
+    g.fillText("扫码进入", px - pad - 16, py + 76);
+    g.fillText("面壁宇宙", px - pad - 16, py + 100);
+  }catch(e){}
+
+  // 左下角竖排意象 + 域名
+  g.textAlign = "left";
+  g.fillStyle = "rgba(201,185,138,.42)";
+  g.font = '400 14px "Noto Serif SC", serif';
+  g.fillText("思 想 即 是 战 场", 88, 1300);
+  g.fillStyle = "rgba(128,146,158,.8)";
+  g.font = '300 15px "Noto Sans SC", sans-serif';
+  g.fillText("andymagicpromax.github.io/santi-faces", 88, 1368);
+
+  return cv.toDataURL("image/png");
+}
+
+/* —— 海报弹窗 —— */
+let POSTER_URL = "", POSTER_NAME = "";
+function closeAchPoster(){
+  const m = document.getElementById("posterModal");
+  if(m) m.classList.remove("show");
+}
+function openAchPoster(id){
+  const a = ACHIEVEMENTS.find(x=>x.id === id);
+  if(!a) return;
+  const on = unlockedAch().some(x=>x.id === id);
+  if(!on){ toastMsg("这个成就还没解锁，达成后再来领海报"); return; }
+  POSTER_URL = ""; POSTER_NAME = a.name;
+  let m = document.getElementById("posterModal");
+  if(!m){
+    m = document.createElement("div");
+    m.id = "posterModal";
+    m.className = "poster-modal";
+    m.onclick = e=>{ if(e.target === m) closeAchPoster(); };
+    document.body.appendChild(m);
+  }
+  m.innerHTML = `<div class="poster-box">
+      <div class="poster-head"><span class="ph-t">成 就 海 报</span><span class="ph-n">${a.name}</span>
+        <span class="ph-x" onclick="closeAchPoster()">×</span></div>
+      <div class="poster-slot" id="posterSlot"><div class="ach-loading">正在生成海报…</div></div>
+      <div class="poster-actions">
+        <button class="btn ghost" id="posterSave" onclick="saveAchPoster()" disabled>保存海报</button>
+        <button class="btn ghost" onclick="closeAchPoster()">关闭</button>
+      </div>
+      <div class="poster-hint">3:4 竖版 · 适合朋友圈 / 小红书 · 手机可长按保存</div>
+    </div>`;
+  void m.offsetWidth;
+  m.classList.add("show");
+  void buildAchPoster(a);
+}
+async function buildAchPoster(a){
+  const slot = document.getElementById("posterSlot");
+  if(!slot) return;
+  try{
+    const url = await makeAchPoster(a);
+    if(!document.getElementById("posterSlot")) return;
+    POSTER_URL = url;
+    slot.innerHTML = `<img src="${url}" alt="${a.name} 成就海报">`;
+    const btn = document.getElementById("posterSave");
+    if(btn){ btn.disabled = false; btn.classList.remove("ghost"); }
+  }catch(e){
+    if(slot) slot.innerHTML = `<div class="ach-loading">海报生成失败，请重试</div>`;
+  }
+}
+function saveAchPoster(){
+  if(!POSTER_URL){ toastMsg("海报还在生成，请稍等"); return; }
+  const nick = (AUTH.user && AUTH.user.username) ? AUTH.user.username : "游客";
+  const safe = String(POSTER_NAME).replace(/[\\/:*?"<>|「」]/g, "");
+  const a = document.createElement("a");
+  a.href = POSTER_URL;
+  a.download = `面壁-成就-${safe}-${nick}.png`;
   document.body.appendChild(a); a.click(); a.remove();
 }
 

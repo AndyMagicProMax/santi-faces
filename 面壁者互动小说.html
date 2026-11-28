@@ -235,6 +235,7 @@ h1,h2,h3{font-family:"Noto Serif SC",serif;font-weight:700}
 .poster-slot .ach-loading{font-size:12px;letter-spacing:2px;color:var(--text-dim)}
 .poster-actions{display:flex;gap:10px;justify-content:center;margin-top:12px}
 .poster-actions .btn{padding:9px 20px;font-size:13px}
+.poster-hint.warn{color:#d9a77f;max-width:340px;line-height:1.7}
 .poster-hint{margin-top:8px;font-size:11px;letter-spacing:1px;color:#6f7d87;text-align:center}
 /* 游玩中达成成就：页面下方弹出的提示卡 */
 .ach-toast{position:fixed;left:50%;bottom:26px;z-index:140;pointer-events:none;
@@ -2882,20 +2883,24 @@ function openAchPoster(id){
 async function buildAchPoster(a){
   const slot = document.getElementById("posterSlot");
   if(!slot) return;
-  let url = "";
+  let url = "", plain = false, lastErr = null;
   try{
     url = await makeAchPoster(a);
   }catch(e){
     console.warn("[成就海报] 首次生成失败，重试：", e);
+    lastErr = e;
     IMG_CACHE.clear(); LINEART_CACHE.clear();
     try{
       url = await makeAchPoster(a);
     }catch(e2){
       console.warn("[成就海报] 带图重试失败，改用无立绘版：", e2);
+      lastErr = e2;
+      plain = true;
       try{
         url = await makeAchPoster(a, true);
       }catch(e3){
         console.warn("[成就海报] 生成失败：", e3);
+        lastErr = e3;
       }
     }
   }
@@ -2908,6 +2913,14 @@ async function buildAchPoster(a){
   slot.innerHTML = `<img src="${url}" alt="${a.name} 成就海报">`;
   const btn = document.getElementById("posterSave");
   if(btn){ btn.disabled = false; btn.classList.remove("ghost"); }
+  /* 降级为简化版时，把原因写在提示行里，不让用户以为是站点坏了 */
+  const hint = document.querySelector(".poster-hint");
+  if(hint && plain){
+    hint.innerHTML = location.protocol === "file:"
+      ? "简化版 · 本地文件打开时浏览器禁止导出带立绘的海报，改用线上地址或本地 http 服务即可恢复"
+      : "简化版 · 立绘 / 线稿这次没载入，已省略" + (lastErr ? "（" + String(lastErr.message || lastErr) + "）" : "");
+    hint.classList.add("warn");
+  }
 }
 function saveAchPoster(){
   if(!POSTER_URL){ toastMsg("海报还在生成，请稍等"); return; }

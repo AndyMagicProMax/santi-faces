@@ -8,8 +8,13 @@ kg_graph.js
 启动三体图谱.bat
 Thumbs.db
 desktop.ini
-_shot_*.png更新上线.bat
+_shot_*.png
+更新上线.bat
 assets/*.png
+!assets/apple-touch-icon.png
+!assets/favicon-32.png
 _*.png
 _*.js
 _*.ps1
+_*.html
+_*.txt

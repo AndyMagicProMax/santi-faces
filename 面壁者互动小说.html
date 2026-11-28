@@ -5,6 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>面壁 · 三体互动小说</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%238fc4d4' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%238fc4d4'/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+<meta name="description" content="《三体》同人互动小说：你是隐藏思想的面壁者，还是看穿一切的破壁人？十六个结局，四种身份，知识图谱与云端存档。">
+<link rel="canonical" href="https://andymagicpromax.github.io/santi-faces/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="面壁者 · 三体同人互动小说">
+<meta property="og:title" content="面壁者 · 你是隐藏思想的面壁者，还是破壁人？">
+<meta property="og:description" content="十六个结局，四种身份。每一次沉默与开口，都在替人类做选择。">
+<meta property="og:image" content="https://andymagicpromax.github.io/santi-faces/assets/og-cover.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://andymagicpromax.github.io/santi-faces/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="面壁者 · 三体同人互动小说">
+<meta name="twitter:description" content="十六个结局，四种身份。每一次沉默与开口，都在替人类做选择。">
+<meta name="twitter:image" content="https://andymagicpromax.github.io/santi-faces/assets/og-cover.jpg">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
 <style>
 /* ============================================================
@@ -259,6 +275,16 @@ h1,h2,h3{font-family:"Noto Serif SC",serif;font-weight:700}
 .choice-btn .hint{display:block;font-size:12px;color:var(--text-dim);margin-top:4px}
 .ending{margin-top:30px;padding:18px;border:1px dashed var(--gold);color:var(--gold);
   font-family:"Noto Serif SC",serif;letter-spacing:2px}
+
+/* ===== 结局成就卡 ===== */
+.ach-slot{margin:16px auto 0;max-width:330px;min-height:120px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--line);background:rgba(6,10,16,.55)}
+.ach-slot img{display:block;width:100%;height:auto;border:0}
+.ach-loading{font-size:12px;letter-spacing:2px;color:var(--text-dim)}
+.ach-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.ach-actions .btn{padding:9px 22px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.ach-hint{margin-top:8px;font-size:11.5px;letter-spacing:1px;color:#6f7d87;text-align:center}
 
 /* ===== 角色立绘（故事页右下角，底部贴合，不遮文字） ===== */
 .portrait{
@@ -2093,7 +2119,7 @@ function renderSelect(){
            ${p?`style="--portrait:url('${p.img}')"`:``}
            onclick="${r.playable ? `startRole('${r.line}')` : ``}">
         <div class="no">${r.no}</div>
-        ${p ? `<img class="name-img" src="${p.name}" alt="${p.alt}">` : `<div class="name">${r.name}</div>`}
+        ${p ? `<img class="name-img" loading="lazy" decoding="async" src="${p.name}" alt="${p.alt}">` : `<div class="name">${r.name}</div>`}
         <div class="brief">${r.brief}</div>
       </div>
       <div class="line-panel ${r.side}">
@@ -2174,7 +2200,7 @@ function renderStory(sceneId){
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5 8 12l7 7"/></svg>上一章
       </button>
     </div>
-    ${showPortrait ? `<img class="portrait" src="${PORTRAITS[pk].img}" alt="${PORTRAITS[pk].alt}">` : ""}`;
+    ${showPortrait ? `<img class="portrait" loading="lazy" decoding="async" src="${PORTRAITS[pk].img}" alt="${PORTRAITS[pk].alt}">` : ""}`;
   typewriter(s.text, ()=>showChoices(s));
 }
 
@@ -2267,15 +2293,198 @@ function storyGoBack(){
   location.hash = target;
 }
 
+/* —— 结局成就卡：1080×1440 竖版，Canvas 现画，可保存为图片 —— */
+let ACH_DATAURL = "";
+function achEndingName(s){
+  return String(s.chapter || "结局").replace(/^结局\s*·\s*/, "").replace(/^结局\s*/, "") || "结局";
+}
+function achRole(id){
+  const r = roleOfNode(id);
+  return r.replace(/^未知角色$/, "面壁者").replace(/（.*?）/g, "");
+}
+function drawSpaced(g, str, x, y, sp){
+  const chars = [...String(str)];
+  const ws = chars.map(c=>g.measureText(c).width);
+  const total = ws.reduce((a,b)=>a+b,0) + sp*(chars.length-1);
+  let cx = x - total/2;
+  chars.forEach((c,i)=>{ g.fillText(c, cx, y); cx += ws[i] + sp; });
+}
+async function makeAchievementCard(sceneId, s){
+  const W = 1080, H = 1440;
+  const cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const g = cv.getContext("2d");
+  try{
+    await Promise.all([
+      document.fonts.load('900 92px "Noto Serif SC"'),
+      document.fonts.load('700 30px "Noto Serif SC"'),
+      document.fonts.load('400 26px "Noto Sans SC"'),
+      document.fonts.load('300 20px "Noto Sans SC"')
+    ]);
+  }catch(e){}
+
+  // 深空底色
+  const bg = g.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, "#081321"); bg.addColorStop(.42, "#05090f"); bg.addColorStop(1, "#03060a");
+  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  const halo = g.createRadialGradient(W*.5, H*.30, 20, W*.5, H*.30, W*.95);
+  halo.addColorStop(0, "rgba(96,168,196,.20)"); halo.addColorStop(.4, "rgba(48,92,120,.09)");
+  halo.addColorStop(.75, "rgba(20,40,56,.03)"); halo.addColorStop(1, "rgba(0,0,0,0)");
+  g.fillStyle = halo; g.fillRect(0, 0, W, H);
+
+  // 星点（固定种子，每次同一张卡）
+  let seed = 20261128;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  for(let i = 0; i < 320; i++){
+    const x = rnd()*W, y = rnd()*H, r = rnd()*1.5 + .25, a = .12 + rnd()*.55;
+    g.fillStyle = `rgba(206,228,240,${a})`;
+    g.beginPath(); g.arc(x, y, r, 0, Math.PI*2); g.fill();
+  }
+  // 底部微光弧线（星体边缘）
+  g.save();
+  const planet = g.createRadialGradient(W*.78, H*.72, 10, W*.78, H*.72, 520);
+  planet.addColorStop(0, "rgba(0,0,0,0)"); planet.addColorStop(.62, "rgba(88,150,180,.05)");
+  planet.addColorStop(.66, "rgba(120,180,210,.13)"); planet.addColorStop(.72, "rgba(0,0,0,0)");
+  g.fillStyle = planet; g.fillRect(0, 0, W, H);
+  g.restore();
+
+  // 细金框 + 青色角标
+  g.strokeStyle = "rgba(201,185,138,.34)"; g.lineWidth = 1.5;
+  g.strokeRect(56, 56, W-112, H-112);
+  g.strokeStyle = "rgba(143,196,212,.55)"; g.lineWidth = 2;
+  const C = 46;
+  [[56,56,1,1],[W-56,56,-1,1],[56,H-56,1,-1],[W-56,H-56,-1,-1]].forEach(([x,y,sx,sy])=>{
+    g.beginPath(); g.moveTo(x + sx*C, y); g.lineTo(x, y); g.lineTo(x, y + sy*C); g.stroke();
+  });
+
+  g.textAlign = "left"; g.textBaseline = "alphabetic";
+
+  // 顶部标识
+  g.fillStyle = "rgba(143,196,212,.82)";
+  g.font = '400 19px "Noto Sans SC", sans-serif';
+  drawSpaced(g, "三 体 · 同 人 互 动 小 说", W/2, 148, 8);
+  g.fillStyle = "rgba(201,185,138,.55)";
+  g.fillRect(W/2 - 46, 176, 92, 1);
+
+  // 结局达成
+  g.fillStyle = "rgba(201,185,138,.92)";
+  g.font = '400 24px "Noto Sans SC", sans-serif';
+  drawSpaced(g, "结  局  达  成", W/2, 352, 12);
+
+  // 结局名（带冷光）
+  const name = achEndingName(s);
+  g.save();
+  g.textAlign = "center";
+  g.shadowColor = "rgba(120,200,226,.45)"; g.shadowBlur = 34;
+  g.fillStyle = "#EDF4F8";
+  g.font = `900 ${name.length >= 6 ? 78 : (name.length <= 4 ? 104 : 92)}px "Noto Serif SC", serif`;
+  g.fillText(name, W/2, 478);
+  g.shadowBlur = 0;
+  g.restore();
+
+  // 角色线
+  g.fillStyle = "rgba(160,182,194,.88)";
+  g.font = '400 26px "Noto Sans SC", sans-serif';
+  drawSpaced(g, `角色 · ${achRole(sceneId)}`, W/2, 546, 3);
+
+  // 分隔线
+  g.strokeStyle = "rgba(201,185,138,.28)"; g.lineWidth = 1;
+  g.beginPath(); g.moveTo(W*.28, 606); g.lineTo(W*.72, 606); g.stroke();
+
+  // 达成者
+  g.fillStyle = "rgba(126,143,154,.9)";
+  g.font = '300 20px "Noto Sans SC", sans-serif';
+  drawSpaced(g, "达 成 者", W/2, 690, 7);
+  const nick = (AUTH.user && AUTH.user.username) ? AUTH.user.username : "游客";
+  g.textAlign = "center";
+  g.fillStyle = "#8FC4D4";
+  g.font = '700 48px "Noto Serif SC", serif';
+  g.fillText(nick.length > 12 ? nick.slice(0, 12) + "…" : nick, W/2, 762);
+
+  // 收集进度
+  let done = 0;
+  try{ done = (JSON.parse(localStorage.getItem(ENDINGS_KEY) || "[]") || []).length; }catch(e){}
+  const totalEndings = Object.values(STORY).filter(n => !n.choices || n.choices.length === 0).length;
+  g.fillStyle = "rgba(150,168,180,.8)";
+  g.font = '300 22px "Noto Sans SC", sans-serif';
+  drawSpaced(g, `已收集结局 ${done} / ${totalEndings}`, W/2, 846, 3);
+
+  // 结尾原句（取正文最后一行）
+  const quoteRaw = String(s.text || "").split("\n").map(x => x.trim()).filter(Boolean).pop() || "";
+  if(quoteRaw){
+    const q = quoteRaw.length > 24 ? quoteRaw.slice(0, 24) + "…" : quoteRaw;
+    g.save();
+    g.textAlign = "center";
+    g.fillStyle = "rgba(210,224,232,.72)";
+    g.font = '400 30px "Noto Serif SC", serif';
+    g.fillText("「" + q + "」", W/2, 952);
+    g.restore();
+  }
+
+  // 中央隐喻水印
+  g.save();
+  g.textAlign = "center";
+  g.fillStyle = "rgba(143,196,212,.055)";
+  g.font = '900 120px "Noto Serif SC", serif';
+  g.fillText("面壁", W/2, 1130);
+  g.restore();
+
+  g.fillStyle = "rgba(201,185,138,.5)";
+  g.font = '400 22px "Noto Serif SC", serif';
+  drawSpaced(g, "思 想 即 是 战 场", W/2, 1214, 8);
+
+  // 页脚：日期 + 域名
+  const d = new Date();
+  const ds = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;
+  g.textAlign = "center";
+  g.fillStyle = "rgba(150,168,180,.85)";
+  g.font = '300 20px "Noto Sans SC", sans-serif';
+  g.fillText(ds, W/2, 1292);
+  g.fillStyle = "rgba(128,148,160,.8)";
+  g.font = '300 17px "Noto Sans SC", sans-serif';
+  drawSpaced(g, "andymagicpromax.github.io/santi-faces", W/2, 1330, 1.5);
+
+  return cv.toDataURL("image/png");
+}
+async function buildAchCard(sceneId, s){
+  const slot = document.getElementById("achSlot");
+  if(!slot) return;
+  try{
+    const url = await makeAchievementCard(sceneId, s);
+    ACH_DATAURL = url;
+    slot.innerHTML = `<img src="${url}" alt="成就卡">`;
+    const btn = document.getElementById("achSave");
+    if(btn){ btn.disabled = false; btn.classList.remove("ghost"); }
+  }catch(e){
+    slot.innerHTML = `<div class="ach-loading">成就卡生成失败，可直接截图保存</div>`;
+  }
+}
+function saveAchCard(){
+  if(!ACH_DATAURL){ toastMsg("成就卡还在生成，请稍等"); return; }
+  const s = STORY[currentStoryId] || {};
+  const nick = (AUTH.user && AUTH.user.username) ? AUTH.user.username : "游客";
+  const a = document.createElement("a");
+  a.href = ACH_DATAURL;
+  a.download = `面壁-${achEndingName(s)}-${nick}.png`;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
 function showChoices(s){
   const box = document.getElementById("choices");
   box.style.visibility = "visible";
   const row = document.getElementById("backRow");
   if(row) row.style.visibility = "visible";   // 「上一章」和选项一起出现，避免选项插入时按钮跳位
   if(!s.choices || s.choices.length === 0){
+    ACH_DATAURL = "";
     box.innerHTML = `<div class="ending">— 本线结局 —</div>
-      <button class="btn" onclick="location.hash='#select'">回到选角页</button>
-      <button class="btn ghost" onclick="location.hash='#home'">回到首页</button>`;
+      <div class="ach-slot" id="achSlot"><div class="ach-loading">正在生成成就卡…</div></div>
+      <div class="ach-actions">
+        <button class="btn ghost" id="achSave" onclick="saveAchCard()" disabled>保存成就卡</button>
+        <button class="btn" onclick="location.hash='#select'">回到选角页</button>
+        <button class="btn ghost" onclick="location.hash='#home'">回到首页</button>
+      </div>
+      <div class="ach-hint">手机上也可长按图片保存 · 分享给一起走过这条线的人</div>`;
+    void buildAchCard(currentStoryId, s);
     return;
   }
   box.innerHTML = s.choices.map(c=>`
@@ -2304,7 +2513,7 @@ function renderArchive(){
 function mountKg(){
   const wrap = document.getElementById("kg-frame-wrap");
   if(!wrap) return;
-  wrap.innerHTML = `<iframe id="kg-frame" src="${KG_PAGE}?embed=1" title="《三体》知识图谱"></iframe>`;
+  wrap.innerHTML = `<iframe id="kg-frame" loading="lazy" src="${KG_PAGE}?embed=1" title="《三体》知识图谱"></iframe>`;
 }
 
 /* ============================================================

@@ -213,6 +213,7 @@ h1,h2,h3{font-family:"Noto Serif SC",serif;font-weight:700}
 .ach-card.on:active{transform:scale(.995)}
 .ach-card .ach-dl{flex:none;font-size:10px;letter-spacing:1px;color:#8fc4d4;border:1px solid rgba(143,196,212,.45);
   border-radius:3px;padding:1px 7px;background:rgba(143,196,212,.10)}
+.ach-card .ach-tip{display:block;font-size:10px;letter-spacing:1px;color:rgba(143,196,212,.72);margin-top:5px}
 /* 成就分享海报弹窗 */
 .poster-modal{position:fixed;inset:0;z-index:150;display:flex;align-items:center;justify-content:center;
   padding:20px;background:rgba(3,7,12,.86);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
@@ -251,6 +252,7 @@ h1,h2,h3{font-family:"Noto Serif SC",serif;font-weight:700}
   .ach-card .ach-state{display:none}   /* 手机端只留「海报」入口，避免右侧太挤 */
   .ach-card .ach-dl{position:absolute;right:10px;top:9px}
   .ach-card .ach-meta{padding-right:6px}
+  .ach-card .ach-tip{font-size:9px;margin-top:4px}
   .poster-box{width:min(360px,94vw)}
   .ach-head{flex-wrap:wrap}
   .ach-clear{order:2}
@@ -2119,6 +2121,7 @@ function achCardHTML(a, on, poster){
       <span class="ach-who">${a.who}</span>
       <span class="ach-name">${a.name}</span>
       ${a.desc?`<span class="ach-desc">${a.desc}</span>`:""}
+      ${poster&&on?'<span class="ach-tip">可点击保存成就海报</span>':""}
     </span>
     ${poster&&on?'<span class="ach-dl">海报</span>':""}
     <span class="ach-state">${on?"已解锁":"未解锁"}</span>
@@ -2657,8 +2660,20 @@ async function makeAchPoster(a){
   g.fillStyle = pg; g.beginPath(); g.ellipse(W*.5, 690, 430, 380, 0, 0, Math.PI*2); g.fill();
   g.restore();
 
-  const list = a.final ? ACH_ALL_PORTRAITS : (ACH_PORTRAIT[a.id] ? [ACH_PORTRAIT[a.id]] : []);
-  if(list.length === 1){
+  const list = ACH_PORTRAIT[a.id] ? [ACH_PORTRAIT[a.id]] : [];
+  if(a.final){
+    // 全收集：文字为主画面，正中金属「面壁」标题，不放立绘
+    try{
+      const img = await loadImage("assets/ach-title.png");
+      const TW = 560, TH = Math.round(TW * img.height / img.width);
+      const tx = (W - TW) / 2, ty = 490;
+      const glow = g.createRadialGradient(W*.5, ty + TH*.5, 30, W*.5, ty + TH*.5, 400);
+      glow.addColorStop(0, "rgba(150,206,232,.14)");
+      glow.addColorStop(1, "rgba(0,0,0,0)");
+      g.fillStyle = glow; g.fillRect(0, ty - 140, W, TH + 280);
+      g.drawImage(img, tx, ty, TW, TH);
+    }catch(e){}
+  }else if(list.length === 1){
     try{
       const img = await loadImage(list[0]);
       const PS = 560;
@@ -2669,27 +2684,13 @@ async function makeAchPoster(a){
       g.restore();
     }catch(e){}
   }else if(list.length > 1){
-    // 全收集：七位角色两排合影
-    const PS = 250;
-    const gap = 8;
-    const rows = [list.slice(0,4), list.slice(4)];
-    const drawRow = async (arr, n, y)=>{
-      const total = arr.length*PS + (arr.length-1)*gap;
-      let x = (W-total)/2;
-      for(const src of arr){
-        try{
-          const img = await loadImage(src);
-          const pc = fadedPortrait(img, PS);
-          g.save();
-          g.globalAlpha = .95;
-          g.drawImage(pc, x, y);
-          g.restore();
-        }catch(e){}
-        x += PS + gap;
-      }
-    };
-    await drawRow(rows[0], 4, 400);
-    await drawRow(rows[1], 3, 618);
+    // 备用：多立绘并排（当前无成就使用）
+    const PS = 250, gap = 8;
+    let x = (W - (list.length*PS + (list.length-1)*gap)) / 2;
+    for(const src of list){
+      try{ g.drawImage(fadedPortrait(await loadImage(src), PS), x, 470); }catch(e){}
+      x += PS + gap;
+    }
   }
 
   // 细金框 + 青色角标
@@ -2717,7 +2718,7 @@ async function makeAchPoster(a){
 
   // 成就名
   const name = String(a.name || "成就");
-  const size = name.length <= 4 ? 96 : name.length <= 6 ? 84 : name.length <= 8 ? 70 : 60;
+  const size = a.final ? 74 : name.length <= 4 ? 96 : name.length <= 6 ? 84 : name.length <= 8 ? 70 : 60;
   g.save();
   g.textAlign = "center";
   g.shadowColor = "rgba(120,200,226,.45)"; g.shadowBlur = 32;
@@ -2731,6 +2732,17 @@ async function makeAchPoster(a){
   g.fillStyle = "rgba(164,186,198,.9)";
   g.font = '400 25px "Noto Sans SC", sans-serif';
   drawSpaced(g, a.id === "ach_luoji" ? "罗辑 · 面壁者视角" : String(a.who || ""), W/2, 368, 2);
+
+  // 全收集：文字为主画面，补一句成就说明与进度
+  if(a.final){
+    g.fillStyle = "rgba(150,168,180,.86)";
+    g.font = '300 22px "Noto Sans SC", sans-serif';
+    g.textAlign = "center";
+    g.fillText(a.desc || "", W/2, 414);
+    g.fillStyle = "rgba(201,185,138,.92)";
+    g.font = '400 20px "Noto Sans SC", sans-serif';
+    drawSpaced(g, "16 / 16 · 全 部 结 局 已 达 成", W/2, 456, 3);
+  }
 
   // 下半段：达成者 / 日期
   g.strokeStyle = "rgba(201,185,138,.26)"; g.lineWidth = 1;
@@ -2804,7 +2816,7 @@ function openAchPoster(id){
         <button class="btn ghost" id="posterSave" onclick="saveAchPoster()" disabled>保存海报</button>
         <button class="btn ghost" onclick="closeAchPoster()">关闭</button>
       </div>
-      <div class="poster-hint">3:4 竖版 · 适合朋友圈 / 小红书 · 手机可长按保存</div>
+      <div class="poster-hint">学习而非商业用途</div>
     </div>`;
   void m.offsetWidth;
   m.classList.add("show");

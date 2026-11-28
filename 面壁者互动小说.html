@@ -549,6 +549,21 @@ body.kg-mode .kg-frame-wrap{height:calc(100vh - 142px);min-height:560px}
 .auth-alt a{color:var(--face);cursor:pointer;text-decoration:none;border-bottom:1px dashed rgba(143,196,212,.4)}
 .auth-foot{font-size:11px;letter-spacing:1.5px;color:#5b6873;text-align:center;line-height:1.95}
 .auth-mode .bgm-control{display:none!important}
+/* ===== 需要登录时的弹窗（游客点存档 / 留言 / 点赞 / 评论时出现） ===== */
+.auth-modal{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;
+  padding:22px 16px;background:rgba(3,7,12,.74);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  opacity:0;pointer-events:none;transition:.24s}
+.auth-modal.on{opacity:1;pointer-events:auto}
+.auth-modal .auth-card{position:relative;max-height:88vh;overflow:auto;
+  transform:translateY(12px) scale(.985);transition:.24s}
+.auth-modal.on .auth-card{transform:none}
+.auth-note{font-size:12px;letter-spacing:1px;line-height:1.85;color:#c9b98a;
+  border-left:2px solid rgba(201,185,138,.45);padding:2px 0 2px 10px;margin:0 0 15px}
+.auth-close{position:absolute;top:8px;right:10px;width:28px;height:28px;background:transparent;border:0;
+  color:var(--text-dim);font-size:17px;line-height:1;cursor:pointer;transition:.18s;border-radius:3px}
+.auth-close:hover{color:var(--face);background:rgba(143,196,212,.1)}
+.auth-modal .auth-msg:empty{display:none}
+.auth-modal .auth-foot{margin-top:8px}
 /* 首页用户条 */
 .who{display:flex;justify-content:center;align-items:center;gap:10px;font-size:12px;letter-spacing:1.5px;
   color:var(--text-dim);margin:2px 0 10px;flex-wrap:wrap}
@@ -734,6 +749,11 @@ body.kg-mode .kg-frame-wrap{height:calc(100vh - 142px);min-height:560px}
     <input type="range" id="bgm-vol" min="0" max="100" value="60" aria-label="音量">
   </div>
   <button id="bgm-toggle" class="bgm-btn" title="点击静音 / 开启" aria-label="背景音乐开关"></button>
+</div>
+
+<!-- 需要登录时的弹窗：游客点「存档 / 留言 / 点赞 / 评论」等受限操作时出现 -->
+<div class="auth-modal" id="authModal" aria-hidden="true">
+  <div class="auth-card" id="authCard" role="dialog" aria-modal="true" aria-labelledby="authModalTitle"></div>
 </div>
 
 <!-- 存档面板（固定在视口层，首页悬停「存档」键、剧情页点「存档」键时展开） -->
@@ -2254,6 +2274,7 @@ function renderStory(sceneId){
     <div class="speaker ${speakerIsBreaker(sceneId)?"breaker":""}">${s.speaker||""}</div>
     <div class="skip-row">
       <button class="skip-btn save-open" id="saveOpenBtn" onclick="toggleSavePanel(this)">存档</button>
+      <button class="skip-btn" id="kgJumpBtn" onclick="jumpToGraph()" title="查看人物关系与所属阵营">知识图谱</button>
       <button class="skip-btn" id="skipBtn" onclick="skipTyping()">跳过</button>
     </div>
     <div class="story-text${showPortrait?" portrait-text":""}" id="storyText"></div>
@@ -2899,12 +2920,34 @@ function showChoices(s){
 
 /* —— 资料库页：内嵌「完整版」知识图谱（纯静态，随站点一起分发，无需本机服务） —— */
 const KG_PAGE = "assets/kg/index.html";
+/* 从剧情页点「知识图谱」进来时，记住当前章节，方便一键回到正在读的这一章 */
+const KG_RETURN_KEY = "santi_kg_return";
+function kgReturnTarget(){
+  try{
+    const v = sessionStorage.getItem(KG_RETURN_KEY) || "";
+    return v.indexOf("#story/") === 0 ? v : "";
+  }catch(e){ return ""; }
+}
+function jumpToGraph(){
+  try{
+    if(location.hash && location.hash.indexOf("#story/") === 0) sessionStorage.setItem(KG_RETURN_KEY, location.hash);
+    else if(location.hash !== "#archive") sessionStorage.removeItem(KG_RETURN_KEY);
+  }catch(e){}
+  typeSfxStop();
+  closeSavePanel(true);
+  location.hash = "#archive";
+}
+function returnFromGraph(){
+  const back = kgReturnTarget();
+  try{ sessionStorage.removeItem(KG_RETURN_KEY); }catch(e){}
+  location.hash = back || "#home";
+}
 
 function renderArchive(){
   app.innerHTML = `
     <div class="story-head">
       <span class="chapter">《三体》知识图谱</span>
-      <span class="back kg-back" onclick="location.hash='#home'">返回首页</span>
+      <span class="back kg-back" onclick="returnFromGraph()">${kgReturnTarget() ? "返回本章" : "返回首页"}</span>
     </div>
     <div class="kg-frame-wrap" id="kg-frame-wrap">
       <div class="kg-loading">正在加载知识图谱…</div>
@@ -2965,7 +3008,11 @@ function savesCount(){
 function writeSave(slotId, nodeId, mode){
   const sc = STORY[nodeId];
   if(!sc || !SAVE_SLOTS.some(s=>s.id === slotId)) return null;
-  if(!canSave()){ toastMsg("游客模式不能保存进度，请先注册或登录"); return null; }
+  if(!canSave()){
+    openAuthModal("存档需要登录：登录后四条存档位会同步到云端，换设备也能接着读。",
+                  ()=>writeSave(slotId, nodeId, mode));
+    return null;
+  }
   const all = savesRead();
   all[slotId] = {
     node: nodeId,
@@ -3022,8 +3069,13 @@ function openSavePanel(anchor, pin){
   clearTimeout(saveAnimTimer);
   saveAnimTimer = setTimeout(function(){ panel.classList.remove("is-opening"); }, 600);  // 兜底：动画事件漏掉也能恢复常态
 }
-/* 点一下「存档」键：开着就收起，关着就钉住展开 */
+/* 点一下「存档」键：开着就收起，关着就钉住展开；游客先弹登录框 */
 function toggleSavePanel(anchor){
+  if(!canSave()){
+    openAuthModal("存档需要登录：登录后四条存档位会同步到云端，换设备也能接着读。",
+                  ()=>openSavePanel(anchor, true));
+    return;
+  }
   const stage = document.getElementById("saveStage");
   if(stage && !stage.hidden && saveAnchorEl === anchor){ closeSavePanel(); return; }
   openSavePanel(anchor, true);
@@ -3160,7 +3212,11 @@ function saveAct(kind, slotId, el){
 
   if(kind === "save"){
     if(!inStoryPage()) return;
-    if(!canSave()){ toastMsg("游客模式不能保存进度，请先注册或登录"); return; }
+    if(!canSave()){
+      openAuthModal("保存进度需要登录：登录后这条存档会写进云端，不会随浏览器清空消失。",
+                    ()=>saveAct("save", slotId, el));
+      return;
+    }
     const exist = savesRead()[slotId];
     if(el && exist && el.dataset.wait !== "1"){
       el.dataset.wait = "1"; el.textContent = "确认覆盖";
@@ -3581,6 +3637,167 @@ function logout(silent, msg){
   renderLogin(silent ? "" : (msg || "已退出登录"), false);
 }
 
+/* ============================================================
+   —— 需要登录时的弹窗：游客点「存档 / 留言 / 点赞 / 评论」时出现 ——
+   不离开当前页面，登录成功后直接接着做刚才那一步。
+   ============================================================ */
+let pendingAuthAction = null;
+let authModalMode = "login";
+let authModalBusy = false;
+
+function openAuthModal(note, after){
+  pendingAuthAction = (typeof after === "function") ? after : null;
+  authModalMode = "login";
+  const modal = document.getElementById("authModal");
+  const card = document.getElementById("authCard");
+  if(!modal || !card) return;
+  paintAuthModal("", note);
+  modal.classList.add("on");
+  modal.setAttribute("aria-hidden", "false");
+  setTimeout(()=>{ const u = document.getElementById("amUser"); if(u) u.focus(); }, 100);
+  document.addEventListener("keydown", authModalEsc);
+}
+function closeAuthModal(keepPending){
+  const modal = document.getElementById("authModal");
+  if(modal){ modal.classList.remove("on"); modal.setAttribute("aria-hidden", "true"); }
+  document.removeEventListener("keydown", authModalEsc);
+  if(!keepPending) pendingAuthAction = null;
+}
+function authModalEsc(e){ if(e.key === "Escape") closeAuthModal(); }
+function authModalMsg(text, ok){
+  const m = document.getElementById("amMsg");
+  if(!m) return;
+  m.textContent = text || "";
+  m.classList.toggle("ok", !!ok);
+}
+/* 弹窗里的表单：登录 / 注册两个页签，字段与登录页一致 */
+function paintAuthModal(msg, note){
+  const card = document.getElementById("authCard");
+  if(!card) return;
+  const reg = authModalMode === "register";
+  const keepName = (document.getElementById("amUser") || {}).value || "";
+  card.innerHTML = `
+    <button class="auth-close" type="button" data-amclose title="关闭" aria-label="关闭">✕</button>
+    <div class="auth-brand" id="authModalTitle" style="text-align:center;margin-bottom:12px">登 录 后 继 续</div>
+    ${note ? `<div class="auth-note">${escHtml(note)}</div>` : ""}
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab ${reg ? "" : "on"}" data-amode="login">登录</button>
+      <button type="button" class="auth-tab ${reg ? "on" : ""}" data-amode="register">注册</button>
+    </div>
+    <form id="amForm" autocomplete="off" novalidate>
+      <div class="auth-field">
+        <label class="auth-label" for="amUser">用户名</label>
+        <input class="auth-input" id="amUser" maxlength="24" value="${escHtml(keepName)}" placeholder="用户名中英文数字皆支持" autocomplete="username">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label" for="amPass">密码</label>
+        <div class="auth-pwd">
+          <input class="auth-input" id="amPass" type="password" maxlength="64" placeholder="至少 6 位" autocomplete="${reg ? "new-password" : "current-password"}">
+          <button type="button" class="auth-eye" data-amEye="amPass" title="显示 / 隐藏密码" aria-label="显示或隐藏密码">${EYE_OPEN}</button>
+        </div>
+      </div>
+      ${reg ? `<div class="auth-field">
+        <label class="auth-label" for="amPass2">确认密码</label>
+        <div class="auth-pwd">
+          <input class="auth-input" id="amPass2" type="password" maxlength="64" placeholder="请再输入一次" autocomplete="new-password">
+          <button type="button" class="auth-eye" data-amEye="amPass2" title="显示 / 隐藏密码" aria-label="显示或隐藏密码">${EYE_OPEN}</button>
+        </div>
+      </div>` : ""}
+      <div class="auth-msg ${msg ? "" : ""}" id="amMsg">${escHtml(msg || "")}</div>
+      <button class="auth-submit" id="amGo" type="submit">${reg ? "注 册" : "登 录"}</button>
+    </form>
+    <div class="auth-alt">${reg
+      ? `已有账号？<a data-amode="login">直接登录</a>`
+      : `还没有账号？<a data-amode="register">注册一个</a>`}</div>
+    <div class="auth-foot">登录后进度同步到云端、可以存档和发言。<br>游客仍可继续浏览，但不会保存任何进度。</div>`;
+  card.querySelector("[data-amclose]").addEventListener("click", ()=>closeAuthModal());
+  card.querySelectorAll("[data-amode]").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      if(authModalBusy) return;
+      const mode = el.dataset.amode;
+      if(mode === authModalMode) return;
+      authModalMode = mode;
+      paintAuthModal("", note);
+      setTimeout(()=>{ const u = document.getElementById("amUser"); if(u) u.focus(); }, 60);
+    });
+  });
+  card.querySelectorAll("[data-amEye]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const input = document.getElementById(btn.dataset.amEye);
+      if(!input) return;
+      const show = input.type === "password";
+      input.type = show ? "text" : "password";
+      btn.innerHTML = show ? EYE_SHUT : EYE_OPEN;
+      btn.classList.toggle("on", show);
+    });
+  });
+  const form = document.getElementById("amForm");
+  if(form) form.addEventListener("submit", submitAuthModal);
+  const passEl = document.getElementById("amPass");
+  if(passEl) passEl.addEventListener("keydown", e=>{
+    if(e.key === "Enter" && authModalMode === "login"){ e.preventDefault(); submitAuthModal(e); }
+  });
+}
+async function submitAuthModal(e){
+  if(e && e.preventDefault) e.preventDefault();
+  if(authModalBusy) return;
+  const userEl = document.getElementById("amUser"), passEl = document.getElementById("amPass");
+  const pass2El = document.getElementById("amPass2");
+  const username = (userEl ? userEl.value : "").trim();
+  const password = passEl ? passEl.value : "";
+  const btn = document.getElementById("amGo");
+  const reg = authModalMode === "register";
+  if(username.length < 2) return authModalMsg("用户名至少 2 个字符");
+  if(!/^[\u4e00-\u9fa5A-Za-z0-9_\-]{2,24}$/.test(username)) return authModalMsg("用户名只能用中文、字母、数字、下划线，2–24 个字符");
+  if(password.length < 6) return authModalMsg("密码至少 6 位");
+  if(reg && (!pass2El || pass2El.value !== password)) return authModalMsg("两次输入的密码不一致，请重新确认");
+
+  authModalBusy = true;
+  authModalMsg(reg ? "正在创建账号…" : "正在验证身份…", true);
+  if(btn){ btn.disabled = true; btn.textContent = reg ? "创建中…" : "验证中…"; }
+  try{
+    if(reg){
+      const taken = await sbFetch("/rest/v1/rpc/username_taken", { method:"POST", body:{ p_name: username } }).catch(()=>null);
+      if(taken === true){ authModalMsg("该用户名已被占用"); return; }
+      const t = await sbSignUp(username, password);
+      if(!t || !t.access_token) throw new Error("username taken");
+      AUTH = { mode:"account", access:t.access_token, refresh:t.refresh_token, expiresAt: Date.now() + ((t.expires_in || 3600) * 1000), user:{ id:t.user.id, username:username, role:"player", created_at:t.user.created_at } };
+      saveAuth(AUTH);
+      const prof = await sbProfile(t.user.id).catch(()=>null);
+      if(prof){ AUTH.user.role = prof.role || "player"; AUTH.user.username = prof.username || username; AUTH.user.created_at = prof.created_at; saveAuth(AUTH); }
+    }else{
+      const t = await sbSignIn(username, password);
+      AUTH = { mode:"account", access:t.access_token, refresh:t.refresh_token, expiresAt: Date.now() + ((t.expires_in || 3600) * 1000), user:{ id:t.user.id, username:username, role:"player" } };
+      saveAuth(AUTH);
+      let prof = null;
+      try{ prof = await sbProfile(t.user.id); }catch(e2){}
+      if(prof){ AUTH.user.role = prof.role || "player"; AUTH.user.username = prof.username || username; AUTH.user.created_at = prof.created_at; saveAuth(AUTH); }
+    }
+    /* 登录成功后拉一次云端存档，和登录页进入游戏时一致 */
+    if(canSave()){
+      try{
+        const row = await sbLoadProgress(AUTH.user.id);
+        const filled = applyCloudProgress(row);
+        if(!filled) clearLocalProgress();
+      }catch(err2){ toastMsg("读取云端进度失败，本次先使用本机进度"); }
+    }
+    const act = pendingAuthAction;
+    pendingAuthAction = null;
+    closeAuthModal(true);
+    toastMsg(reg ? "注册成功，可以继续了" : "已登录，可以继续了");
+    refreshUnseen();
+    if(act){ setTimeout(()=>{ try{ act(); }catch(err3){ router(); } }, 60); }
+    else { router(); }
+  }catch(err){
+    AUTH = null; saveAuth(null);
+    authModalMsg(friendlyAuthError(err, reg ? "register" : "login"));
+  }finally{
+    authModalBusy = false;
+    const b = document.getElementById("amGo");
+    if(b){ b.disabled = false; b.textContent = authModalMode === "register" ? "注 册" : "登 录"; }
+  }
+}
+
 /* —— 首页上的用户条 —— */
 function whoLine(){
   if(!AUTH) return "";
@@ -3813,7 +4030,11 @@ async function renderBoard(){
 }
 
 async function toggleLike(postId, btn){
-  if(!canPost()){ toastMsg("游客不能点赞，登录后即可"); return; }
+  if(!canPost()){
+    openAuthModal("点赞需要登录：一个账号对同一条留言只算一次，点赞数才准。",
+                  ()=>toggleLike(postId, btn));
+    return;
+  }
   const token = await ensureToken();
   if(!token){ toastMsg("登录状态已过期，请重新登录"); return; }
   const liked = btn.classList.contains("liked");
@@ -3886,7 +4107,11 @@ async function fillComments(postId, box){
 
 /* 点「回复」：在该评论下面展开一个输入框 */
 function openReply(postId, box, commentId, name){
-  if(!canPost()){ toastMsg("游客不能回复，登录后即可"); return; }
+  if(!canPost()){
+    openAuthModal("回复需要登录：登录后你的昵称会显示在这条回复旁边。",
+                  ()=>openReply(postId, box, commentId, name));
+    return;
+  }
   const wrap = box.querySelector("#replybox-" + commentId);
   if(!wrap) return;
   if(wrap.dataset.open === "1"){ wrap.innerHTML = ""; wrap.dataset.open = "0"; return; }
@@ -3906,7 +4131,11 @@ function openReply(postId, box, commentId, name){
 }
 
 async function addComment(postId, box, parentId, replyTo, preset){
-  if(!canPost()){ toastMsg("游客不能评论，登录后即可"); return; }
+  if(!canPost()){
+    openAuthModal("评论需要登录：登录后就能在这条留言下面说话。",
+                  ()=>{ const b = document.getElementById("cmts-" + postId); if(b){ b.dataset.open = "0"; } toggleComments(postId); });
+    return;
+  }
   let text = (preset || "").trim();
   if(!text){
     const input = box.querySelector("#cmt-" + postId);
@@ -3929,7 +4158,11 @@ async function addComment(postId, box, parentId, replyTo, preset){
 
 /* 评论点赞 / 取消 */
 async function toggleCommentLike(commentId, btn, postId, box){
-  if(!canPost()){ toastMsg("游客不能点赞，登录后即可"); return; }
+  if(!canPost()){
+    openAuthModal("点赞需要登录：一个账号对同一条评论只算一次，点赞数才准。",
+                  ()=>toggleCommentLike(commentId, btn, postId, box));
+    return;
+  }
   const token = await ensureToken();
   if(!token){ toastMsg("登录状态已过期，请重新登录"); return; }
   const liked = btn.classList.contains("liked");
@@ -3950,7 +4183,10 @@ async function toggleCommentLike(commentId, btn, postId, box){
 }
 
 async function submitPost(){
-  if(!canPost()){ toastMsg("游客不能发言，注册登录后即可"); return; }
+  if(!canPost()){
+    openAuthModal("发留言需要登录：登录后你的昵称会显示在留言上。", ()=>{ const b = document.getElementById("boardBody"); if(b) renderBoard(); });
+    return;
+  }
   const ta = document.getElementById("postText");
   const text = ((ta && ta.value) || "").trim();
   if(!text){ toastMsg("写点什么再发布吧"); return; }

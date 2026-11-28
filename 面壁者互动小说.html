@@ -2559,13 +2559,27 @@ function lineArtCanvas(src, w, h){
     const c = document.createElement("canvas");
     c.width = w; c.height = h;
     const x = c.getContext("2d");
-    x.drawImage(img, 0, 0, w, h);
+    // 保持原图比例（cover 铺满画布，超出部分裁掉），避免把圆形太阳压成椭圆
+    const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+    const s = Math.max(w / iw, h / ih);
+    const dw = iw * s, dh = ih * s;
+    x.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
     const d = x.getImageData(0, 0, w, h), px = d.data;
     for(let i = 0; i < px.length; i += 4){
       const lum = px[i]*.299 + px[i+1]*.587 + px[i+2]*.114;
-      px[i+3] = lum <= 12 ? 0 : Math.min(255, lum * 1.2);
+      const a2 = lum <= 12 ? 0 : Math.min(255, lum * 1.2);
+      px[i+3] = Math.min(px[i+3], a2);   // 保留原图透明区域，避免把已抠掉的白底又「复活」成方块
     }
     x.putImageData(d, 0, 0);
+    // 上下边缘做柔化，避免线稿被画布边界切出一条直线
+    x.globalCompositeOperation = "destination-out";
+    const ft = x.createLinearGradient(0, 0, 0, 90);
+    ft.addColorStop(0, "rgba(0,0,0,1)"); ft.addColorStop(1, "rgba(0,0,0,0)");
+    x.fillStyle = ft; x.fillRect(0, 0, w, 90);
+    const fb = x.createLinearGradient(0, h-90, 0, h);
+    fb.addColorStop(0, "rgba(0,0,0,0)"); fb.addColorStop(1, "rgba(0,0,0,1)");
+    x.fillStyle = fb; x.fillRect(0, h-90, w, 90);
+    x.globalCompositeOperation = "source-over";
     return c;
   })();
   LINEART_CACHE.set(key, p);
@@ -2648,7 +2662,7 @@ async function makeAchPoster(a){
       sc.addColorStop(0, "rgba(4,8,14,.92)");
       sc.addColorStop(.55, "rgba(4,8,14,.52)");
       sc.addColorStop(1, "rgba(4,8,14,0)");
-      g.fillStyle = sc; g.fillRect(44, 44, W-88, 540);
+      g.fillStyle = sc; g.fillRect(0, 0, W, 560);   // 压暗铺满整幅，避免在金色边框处出现亮度断层
     }catch(e){}
   }
 
